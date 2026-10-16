@@ -121,11 +121,6 @@
     .form-input:focus, .form-select:focus {
       outline: none; border-color: var(--primary); box-shadow: 0 0 0 3px var(--primary-light);
     }
-    .form-select {
-      appearance: none;
-      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%236B7280' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
-      background-repeat: no-repeat; background-position: right 12px center; padding-right: 40px;
-    }
     .progress { width: 100%; height: 8px; background: var(--border); border-radius: var(--radius-full); overflow: hidden; }
     .progress-bar { height: 100%; background: var(--primary); border-radius: var(--radius-full); transition: width var(--transition-slow); }
     .stat-card {
@@ -133,13 +128,6 @@
       border-radius: var(--radius-md); padding: var(--space-5);
       display: flex; flex-direction: column; gap: var(--space-3);
     }
-    .stat-icon {
-      width: 44px; height: 44px; border-radius: var(--radius);
-      display: flex; align-items: center; justify-content: center;
-      background: var(--primary-light); color: var(--primary);
-    }
-    .stat-value { font-size: var(--text-3xl); font-weight: 800; color: var(--text); line-height: 1.1; letter-spacing: -0.02em; }
-    .stat-label { font-size: var(--text-sm); color: var(--text-muted); font-weight: 500; }
     .sidebar {
       width: var(--sidebar-width); background: var(--surface);
       border-right: 1px solid var(--border); display: flex; flex-direction: column;
@@ -255,14 +243,6 @@
     .section-header h2 { font-size: var(--text-xl); font-weight: 700; }
     .exam-layout { display: grid; grid-template-columns: 1fr 320px; gap: var(--space-5); align-items: start; }
     @media (max-width: 1024px) { .exam-layout { grid-template-columns: 1fr; } }
-    .exam-header {
-      background: var(--surface); border: 1px solid var(--border);
-      border-radius: var(--radius-md); padding: var(--space-5);
-      margin-bottom: var(--space-5); display: flex; align-items: center;
-      justify-content: space-between; gap: var(--space-4); flex-wrap: wrap;
-    }
-    .exam-title { font-size: var(--text-lg); font-weight: 700; }
-    .exam-subtitle { font-size: var(--text-sm); color: var(--text-muted); }
     .timer {
       display: flex; align-items: center; gap: var(--space-2);
       padding: 10px 20px; border-radius: var(--radius); font-size: var(--text-xl);
@@ -350,8 +330,6 @@
     .palette-legend { display: flex; flex-direction: column; gap: var(--space-2); padding-top: var(--space-4); border-top: 1px solid var(--border); }
     .legend-item { display: flex; align-items: center; gap: var(--space-2); font-size: var(--text-xs); color: var(--text-muted); }
     .legend-dot { width: 12px; height: 12px; border-radius: 3px; }
-    .exam-progress { margin-top: var(--space-4); padding-top: var(--space-4); border-top: 1px solid var(--border); }
-    .exam-progress-header { display: flex; justify-content: space-between; font-size: var(--text-xs); color: var(--text-muted); margin-bottom: var(--space-2); }
     .results-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: var(--space-4); margin-bottom: var(--space-6); }
     .result-stat {
       background: var(--surface); border: 1px solid var(--border);
@@ -587,7 +565,7 @@
       z-index: 9999; display: flex; flex-direction: column; overflow: hidden;
       opacity: 0; visibility: hidden; transform: translateY(-4px);
       transition: opacity var(--transition-fast), visibility var(--transition-fast), transform var(--transition-fast);
-      max-height: 260px;
+      max-height: 300px;
     }
     .ms-panel.open { opacity: 1; visibility: visible; transform: translateY(0); }
     .ms-search { padding: 8px; border-bottom: 1px solid var(--border); position: relative; flex-shrink: 0; }
@@ -597,7 +575,7 @@
     }
     .ms-search input:focus { outline: none; border-color: var(--primary); background: var(--surface); }
     .ms-search svg { position: absolute; left: 16px; top: 50%; transform: translateY(-50%); width: 12px; height: 12px; color: var(--text-muted); pointer-events: none; }
-    .ms-options { overflow-y: auto; padding: 4px; display: flex; flex-direction: column; gap: 2px; flex: 1; min-height: 0; max-height: 160px; }
+    .ms-options { overflow-y: auto; padding: 4px; display: flex; flex-direction: column; gap: 2px; flex: 1; min-height: 0; max-height: 180px; }
     .ms-option { display: flex; align-items: center; gap: var(--space-2); padding: 8px 10px; border-radius: var(--radius-sm); font-size: var(--text-sm); cursor: pointer; transition: background var(--transition-fast); user-select: none; flex-shrink: 0; }
     .ms-option:hover { background: var(--bg); }
     .ms-option.selected { background: var(--primary-light); color: var(--primary); font-weight: 500; }
@@ -1431,8 +1409,8 @@ const state = {
     rebuilt: false
   },
   exam: {
-    practice: { subjects: [], currentSubjectIndex: 0, currentQuestion: 1, totalQuestions: 0, timer: 0, answers: {}, flagged: new Set(), timerInterval: null, questionLists: {}, mixedList: null, timeMode: 'one', questionOrder: 'grouped', shuffleQuestions: false, shuffleOptions: false, shuffledOptionsMap: {}, subjectTimers: null },
-    mock: { mockId: null, subject: null, subjects: [], currentSubjectIndex: 0, currentQuestion: 1, totalQuestions: 40, timer: 120 * 60, answers: {}, flagged: new Set(), timerInterval: null, questionList: [], questionLists: {}, pendingMockId: null, mockInstructions: '', mockTitle: '', multiSubject: false, subjectTimers: null, timeMode: 'one' }
+    practice: { subjects: [], currentSubjectIndex: 0, currentQuestion: 1, totalQuestions: 0, timer: 0, answers: {}, flagged: new Set(), timerInterval: null, questionLists: {}, mixedList: null, timeMode: 'one', questionOrder: 'grouped', shuffleQuestions: false, shuffleOptions: false, shuffledOptionsMap: {}, subjectTimers: null, _submitted: false, _submitting: false },
+    mock: { mockId: null, subject: null, subjects: [], currentSubjectIndex: 0, currentQuestion: 1, totalQuestions: 40, timer: 120 * 60, answers: {}, flagged: new Set(), timerInterval: null, questionList: [], questionLists: {}, pendingMockId: null, mockInstructions: '', mockTitle: '', multiSubject: false, subjectTimers: null, timeMode: 'one', _submitted: false, _submitting: false }
   },
   wizard: {
     step: 1, selectedSubjects: [], configs: {},
@@ -1477,11 +1455,6 @@ function sanitizeForFirebase(obj) {
   return obj;
 }
 
-/* =========================================================
-   FIXED: findStoredAnswer now checks subject-prefixed keys
-   so single-subject practice answers (saved as "0-1") are
-   found during scoring and review.
-   ========================================================= */
 function findStoredAnswer(answers, opts) {
   if (!answers || typeof answers !== 'object') return undefined;
   const candidates = [];
@@ -1524,42 +1497,39 @@ function computeScore(answers, questions, opts) {
   return { correct, total, pct };
 }
 
+function capitalizeWords(str) {
+  return String(str || '').replace(/\b\w/g, c => c.toUpperCase());
+}
+
 function rebuildSubjectsFromQuestions() {
   const subjectMap = {};
-  state.subjects.forEach(s => {
-    subjectMap[s.name] = {
-      id: s.id || s.name.toLowerCase().replace(/\s+/g, '-'),
-      name: s.name,
-      questions: 0,
-      topics: new Set(s.topics || []),
-      years: new Set(s.years || [])
-    };
-  });
 
   Object.values(state.allQuestions).forEach(q => {
-    const subjName = (q.subject || 'General').trim();
+    const rawName = (q.subject || 'General').trim();
+    const key = rawName.toLowerCase();
+    const displayName = capitalizeWords(rawName);
     const topicName = (q.topic || '').trim();
-    const year = (q.year || '').trim();
+    const year = String(q.year || '').trim();
 
-    if (!subjectMap[subjName]) {
-      subjectMap[subjName] = {
-        id: subjName.toLowerCase().replace(/\s+/g, '-'),
-        name: subjName,
+    if (!subjectMap[key]) {
+      subjectMap[key] = {
+        id: key.replace(/\s+/g, '-'),
+        name: displayName,
         questions: 0,
         topics: new Set(),
         years: new Set()
       };
     }
-    subjectMap[subjName].questions++;
-    if (topicName) subjectMap[subjName].topics.add(topicName);
-    if (year) subjectMap[subjName].years.add(year);
+    subjectMap[key].questions++;
+    if (topicName) subjectMap[key].topics.add(topicName);
+    if (year) subjectMap[key].years.add(year);
   });
 
   state.subjects = Object.values(subjectMap).map(s => ({
     id: s.id,
     name: s.name,
     questions: s.questions,
-    topics: Array.from(s.topics),
+    topics: Array.from(s.topics).sort(),
     years: Array.from(s.years).sort()
   })).filter(s => s.name);
 
@@ -1743,7 +1713,9 @@ window.studentNav = function(view) {
     document.getElementById('studentSidebar').classList.remove('open');
     return;
   }
-  if (state.studentView && state.studentView !== view) {
+  // FIX: don't push exam/instructions/review views to history
+  const skipHistory = ['practice-exam', 'mock-exam', 'mock-instructions', 'review'];
+  if (state.studentView && state.studentView !== view && !skipHistory.includes(state.studentView)) {
     state.viewHistory.push(state.studentView);
     if (state.viewHistory.length > 20) state.viewHistory.shift();
   }
@@ -1980,11 +1952,7 @@ window.setGlobalTime = function(value) {
 
 window.setSubjectYear = function(subjectId, year) {
   const cfg = state.wizard.configs[subjectId] || {};
-  if (cfg.year === year && year !== 'all') {
-    cfg.year = 'all';
-  } else {
-    cfg.year = year;
-  }
+  cfg.year = year;
   state.wizard.configs[subjectId] = cfg;
   const panel = document.getElementById(`yearPanel-${subjectId}`);
   const trigger = document.querySelector(`#yearDropdown-${subjectId} .year-dropdown-trigger`);
@@ -2057,6 +2025,7 @@ function renderWizardStep1() {
                     <span class="st-name">${s.name}</span>
                     <span class="st-check">${sel ? ICONS.check : ''}</span>
                   </div>
+                  <span class="text-xs text-muted">${s.questions} question${s.questions === 1 ? '' : 's'}</span>
                 </button>`;
             }).join('')}
           </div>`}
@@ -2075,6 +2044,8 @@ function renderTopicMultiSelect(subjectId, selectedTopics = []) {
   }
   const selectedSet = new Set(selectedTopics.length ? selectedTopics : subj.topics);
   const count = selectedSet.size;
+  const allSelected = count === subj.topics.length;
+
   return `
     <div class="form-group">
       <label class="form-label">Topics</label>
@@ -2088,17 +2059,41 @@ function renderTopicMultiSelect(subjectId, selectedTopics = []) {
           <div class="ms-options" id="msOptions-${subjectId}">
             ${subj.topics.map(topic => {
               const isSel = selectedSet.has(topic);
-              return `<div class="ms-option ${isSel ? 'selected' : ''}" data-topic="${topic}" onclick="window.toggleMsTopic('${subjectId}', '${topic}')">
+              return `<div class="ms-option ${isSel ? 'selected' : ''}" data-topic="${topic}" onclick="window.toggleMsTopic('${subjectId}', '${topic.replace(/'/g, "\\'")}')">
                 <span class="ms-check">${isSel ? ICONS.check : ''}</span>
                 <span class="ms-label">${topic}</span>
               </div>`;
             }).join('')}
+          </div>
+          <div class="ms-footer">
+            <span>${count} of ${subj.topics.length}</span>
+            <div class="ms-actions">
+              <button type="button" class="ms-btn" onclick="event.stopPropagation(); window.selectAllTopics('${subjectId}')">${allSelected ? 'Deselect All' : 'Select All'}</button>
+            </div>
           </div>
         </div>
       </div>
     </div>
   `;
 }
+
+window.selectAllTopics = function(subjectId) {
+  const subj = state.subjects.find(s => s.id === subjectId);
+  if (!subj) return;
+  const cfg = state.wizard.configs[subjectId] || {};
+  const allTopics = subj.topics || [];
+  const isAllSelected = (cfg.topics || []).length === allTopics.length;
+  cfg.topics = isAllSelected ? [] : [...allTopics];
+  state.wizard.configs[subjectId] = cfg;
+  renderWizard();
+};
+
+window.deselectAllTopics = function(subjectId) {
+  const cfg = state.wizard.configs[subjectId] || {};
+  cfg.topics = [];
+  state.wizard.configs[subjectId] = cfg;
+  renderWizard();
+};
 
 function renderYearDropdown(subjectId, cfg, subjYears) {
   const currentYear = cfg.year || 'all';
@@ -2188,7 +2183,7 @@ function renderWizardStep2() {
           return `
             <div class="subject-config-item">
               <div class="subject-config-head ${isOpen ? 'open' : ''}" onclick="window.toggleSubjectConfig('${s.id}')">
-                <div><div class="sch-name">${s.name}</div><div class="sch-topics">${cfg.topics.length} topics selected</div></div>
+                <div><div class="sch-name">${s.name}</div><div class="sch-topics">${cfg.topics.length} topics selected · ${cfg.questions} questions · ${cfg.year === 'all' ? 'All years' : cfg.year}</div></div>
                 <span class="sch-chevron">${ICONS.chevronDown}</span>
               </div>
               <div class="subject-config-body ${isOpen ? 'open' : ''}">
@@ -2323,6 +2318,7 @@ function renderWizard() {
   `;
 }
 
+/* FIXED: startPracticeFromWizard — reset submit flags, topic filter only when narrowed */
 window.startPracticeFromWizard = function() {
   if (!state.currentUser) { window.openLoginPage(); return; }
   const w = state.wizard;
@@ -2333,7 +2329,14 @@ window.startPracticeFromWizard = function() {
   exam.subjects = w.selectedSubjects.map(s => {
     const cfg = w.configs[s.id] || { questions: 40, topics: [], year: 'all' };
     const qCount = Math.min(MAX_QUESTIONS, cfg.questions || 40);
-    return { id: s.id, name: s.name, questions: qCount, time: globalTime, topics: cfg.topics || [], year: cfg.year || 'all' };
+    return {
+      id: s.id,
+      name: s.name,
+      questions: qCount,
+      time: globalTime,
+      topics: cfg.topics || [],
+      year: cfg.year || 'all'
+    };
   });
   exam.timeMode = 'one';
   exam.questionOrder = w.questionOrder;
@@ -2344,23 +2347,39 @@ window.startPracticeFromWizard = function() {
   exam.answers = {};
   exam.flagged = new Set();
   exam.shuffledOptionsMap = {};
-
   exam.questionLists = {};
+  exam._submitted = false;
+  exam._submitting = false;
   let totalQ = 0;
 
   exam.subjects.forEach((subj, sIdx) => {
     let pool = Object.entries(state.allQuestions)
       .map(([id, q]) => ({ id, ...q }))
-      .filter(q => q.subject === subj.name);
+      .filter(q => (q.subject || '').toLowerCase() === subj.name.toLowerCase());
 
-    if (subj.topics && subj.topics.length > 0) {
-      pool = pool.filter(q => !q.topic || subj.topics.includes(q.topic));
+    // FIX: topic filter only active when the user narrowed below all topics
+    const subjMeta = state.subjects.find(x => x.id === subj.id);
+    const allTopicsForSubject = subjMeta?.topics || [];
+    const userTopics = subj.topics || [];
+    const topicFilterActive = userTopics.length > 0 && userTopics.length < allTopicsForSubject.length;
+
+    if (topicFilterActive) {
+      pool = pool.filter(q => {
+        const qTopic = (q.topic || '').trim();
+        if (!qTopic) return false;
+        return userTopics.some(t => t.trim() === qTopic);
+      });
     }
+
     if (subj.year && subj.year !== 'all') {
-      pool = pool.filter(q => !q.year || q.year === subj.year);
+      pool = pool.filter(q => {
+        const qYear = String(q.year || '').trim();
+        return qYear === String(subj.year);
+      });
     }
 
     if (w.shuffleQuestions) pool = shuffleArray(pool);
+
     const take = Math.min(subj.questions, pool.length);
     const selected = pool.slice(0, take);
     exam.questionLists[sIdx] = selected;
@@ -2383,6 +2402,11 @@ window.startPracticeFromWizard = function() {
     exam.totalQuestions = all.length || 1;
   } else {
     exam.mixedList = null;
+  }
+
+  if (exam.totalQuestions === 0) {
+    alert('No questions match your filters. Try selecting different topics or years.');
+    return;
   }
 
   window.studentNav('practice-exam');
@@ -2525,10 +2549,6 @@ function renderMockExamRoom(exam) {
             <div class="legend-item"><span class="legend-dot" style="background:var(--primary);"></span> Answered</div>
             <div class="legend-item"><span class="legend-dot" style="background:var(--bg);border:1px solid var(--border);"></span> Unanswered</div>
             <div class="legend-item"><span class="legend-dot" style="background:var(--gold);"></span> Flagged</div>
-          </div>
-          <div class="exam-progress">
-            <div class="exam-progress-header"><span>Progress</span><span>${Math.round((totalAnswered / exam.totalQuestions) * 100)}%</span></div>
-            <div class="progress"><div class="progress-bar" style="width:${(totalAnswered / exam.totalQuestions) * 100}%;"></div></div>
           </div>
         </aside>
       </div>
@@ -2785,16 +2805,18 @@ function startExamTimerFor(type) {
   }, 1000);
 }
 
+/* FIXED: no double submit */
 window.autoSubmitFor = function(type) {
   const exam = getExam(type);
+  if (exam._submitting || exam._submitted) return;
+  exam._submitting = true;
   window.openModal('Time Up!',
     `<p>Time is up. Your answers are being submitted automatically.</p>
      <p class="mt-3 text-muted">You answered <strong>${Object.keys(exam.answers).length}</strong> out of <strong>${exam.totalQuestions}</strong>.</p>`,
     [{ label: 'OK', class: 'btn-primary', action: `window.closeModal(); window.submitExamFor('${type}')` }]);
   setTimeout(() => {
-    if (document.getElementById('modal').classList.contains('open')) {
-      window.closeModal();
-    }
+    if (exam._submitted) return;
+    if (document.getElementById('modal').classList.contains('open')) window.closeModal();
     window.submitExamFor(type);
   }, 3000);
 };
@@ -2827,16 +2849,23 @@ window.quitExam = function(type, backView) {
   exam.flagged = new Set();
   if (type === 'practice') exam.currentSubjectIndex = 0;
   if (type === 'mock') exam.currentSubjectIndex = 0;
+  exam._submitted = false;
+  exam._submitting = false;
   window.studentNav(backView);
 };
 
+/* FIXED: submit guard */
 window.submitExamFor = async function(type) {
+  const exam = getExam(type);
+  if (exam._submitted) return;
+  exam._submitted = true;
+  exam._submitting = false;
   window.closeModal();
   if (!state.currentUser || !state.currentUser.uid) {
     alert('You must be logged in to submit. Please log in again.');
+    exam._submitted = false;
     return;
   }
-  const exam = getExam(type);
   if (exam.timerInterval) { clearInterval(exam.timerInterval); exam.timerInterval = null; }
   const answered = Object.keys(exam.answers).length;
   const total = exam.totalQuestions;
@@ -2868,7 +2897,7 @@ window.submitExamFor = async function(type) {
     if (exam.questionOrder === 'mixed' && exam.mixedList) {
       snapshot.questionList = exam.mixedList.map(mapQuestion);
       snapshot.multiSubject = false;
-      const s = computeScore(exam.answers, snapshot.questionList, { isMulti: false });
+      const s = computeScore(exam.answers, snapshot.questionList, { isMulti: false, subjectIndex: 0 });
       scoreCorrect = s.correct; scoreTotal = s.total;
     } else if (exam.subjects.length === 1) {
       const list = (exam.questionLists[0] || []).map(mapQuestion);
@@ -2912,7 +2941,7 @@ window.submitExamFor = async function(type) {
     } else {
       snapshot.questionList = (exam.questionList || []).map(mapQuestion);
       snapshot.multiSubject = false;
-      const s = computeScore(exam.answers, snapshot.questionList, { isMulti: false });
+      const s = computeScore(exam.answers, snapshot.questionList, { isMulti: false, subjectIndex: 0 });
       scoreCorrect = s.correct; scoreTotal = s.total;
     }
   }
@@ -2965,9 +2994,6 @@ window.submitExamFor = async function(type) {
   window.studentNav('results');
 };
 
-/* =========================================================
-   REVIEW / CORRECTION
-   ========================================================= */
 window.openReview = function(resultId) {
   let result = (state.userResults || []).find(r => r.id === resultId);
   if (!result) {
@@ -2985,6 +3011,15 @@ window.openReview = function(resultId) {
 
   if (!snapshot || (!snapshot.questionList && !snapshot.questionLists)) {
     const subjectNames = (result.subject || '').split(',').map(s => s.trim()).filter(Boolean);
+
+    // FIX: legacy multi-subject correction guard
+    if (subjectNames.length > 1) {
+      window.openModal('Correction Unavailable',
+        `<p class="text-muted">This result was created before correction snapshots were saved and covers multiple subjects. The correction can't be rebuilt reliably.</p>`,
+        [{ label: 'OK', class: 'btn-primary', action: 'window.closeModal()' }]);
+      return;
+    }
+
     const allQs = Object.values(state.allQuestions).map(q => ({ ...q }));
 
     let rebuiltQuestions = [];
@@ -3273,7 +3308,6 @@ window.switchReviewSubject = function(idx) {
   document.getElementById('studentContent').innerHTML = renderReview();
 };
 
-/* RESULTS */
 function renderStudentResults() {
   return `
     <div class="fade-in">
@@ -3631,6 +3665,8 @@ window.beginMockExam = function() {
   exam.subjects = isMulti ? finalSubjects : null;
   exam.multiSubject = isMulti;
   exam.currentSubjectIndex = 0;
+  exam._submitted = false;
+  exam._submitting = false;
 
   if (isMulti) {
     exam.questionLists = finalLists;
@@ -3721,31 +3757,48 @@ window.closeModal = function() { document.getElementById('modal').classList.remo
 document.getElementById('modal').addEventListener('click', e => { if (e.target.id === 'modal') window.closeModal(); });
 document.addEventListener('keydown', e => { if (e.key === 'Escape') window.closeModal(); });
 
+/* =========================================================
+   FIXED: loadQuestions — read option_images correctly
+   ========================================================= */
 function loadQuestions() {
   if (!window.__fbOnValue) return;
-  window.__fbOnValue(window.__fbRef(window.__fbDb, 'questions'), snap => {
-    state.allQuestions = snap.val() || {};
-    state.dataLoaded.questions = true;
-    console.log(`[Firebase] ${Object.keys(state.allQuestions).length} questions loaded`);
-    rebuildSubjectsFromQuestions();
-  });
-}
+  window.__fbOnValue(window.__fbRef(window.__fbDb, 'jamb_questions'), snap => {
+    const raw = snap.val() || {};
+    const converted = {};
 
-function loadSubjectsFromFirebase() {
-  if (!window.__fbOnValue) return;
-  window.__fbOnValue(window.__fbRef(window.__fbDb, 'subjects'), snap => {
-    const val = snap.val() || {};
-    const list = Object.entries(val).map(([id, s]) => ({
-      id, name: s.name || id, questions: 0, topics: s.topics || [], years: s.years || []
-    })).filter(s => s.name);
-    if (list.length > 0) {
-      state.subjects = list;
-      state.dataLoaded.subjects = true;
-      console.log('[Firebase] Subjects from /subjects:', list.length);
-      if (state.dataLoaded.questions) rebuildSubjectsFromQuestions();
-    } else {
-      console.log('[Firebase] /subjects empty — will use subjects from questions only');
-    }
+    Object.entries(raw).forEach(([id, q]) => {
+      // Build options array — only non-empty A–E, text only
+      const opts = [];
+      const optImgs = [];
+      ['a','b','c','d','e'].forEach((letter, i) => {
+        const val = q['option_' + letter];
+        if (val && String(val).trim()) {
+          opts.push(letter.toUpperCase() + ') ' + String(val).trim());
+          // Align image by the SAME letter position (0..4)
+          optImgs.push((q.option_images && q.option_images[i]) || null);
+        }
+      });
+
+      converted[id] = {
+        id: id,
+        text: q.question || '',
+        subject: q.subject || 'General',
+        topic: q.topic || '',
+        year: String(q.year || ''),
+        options: opts,
+        optionImages: optImgs,
+        correct: (q.answer || 'A').toUpperCase(),
+        explanation: q.explanation || '',
+        image: q.image_url || null,
+        explanationImage: q.explanation_image_url || null,
+        difficulty: q.difficulty || ''
+      };
+    });
+
+    state.allQuestions = converted;
+    state.dataLoaded.questions = true;
+    console.log(`[Firebase] ${Object.keys(state.allQuestions).length} questions loaded from jamb_questions`);
+    rebuildSubjectsFromQuestions();
   });
 }
 
@@ -3806,7 +3859,6 @@ function bootApp() {
       window.addEventListener('firebase-ready', initFirebase, { once: true });
       return;
     }
-    loadSubjectsFromFirebase();
     loadQuestions();
     loadMocks();
 
