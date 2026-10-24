@@ -2513,8 +2513,13 @@ function renderMockExamRoom(exam) {
       ${tabsHTML ? `<div class="subject-tabs">${tabsHTML}</div>` : ''}
       <div class="exam-layout">
         <div>
-          <div class="question-card">
+           <div class="question-card">
             <div class="question-number">${questionLabel}</div>
+            
+            ${q.section ? `<div style="font-weight:700; color:var(--primary); margin-bottom:8px;">${esc(q.section)}</div>` : ''}
+            
+            ${q.passage ? `<div style="background:var(--bg); border-left:4px solid var(--primary); padding:16px; border-radius:8px; margin-bottom:20px; font-size:15px; line-height:1.7; color:#333; font-style:italic;">${esc(q.passage)}</div>` : ''}
+            
             ${q.image ? `<img class="question-image" src="${q.image}" alt="Question image" onerror="this.style.display='none'">` : ''}
             <div class="question-text">${q.text || ''}</div>
             <div class="options-list">
@@ -2683,6 +2688,11 @@ function renderPracticeExamRoom(exam) {
         <div>
           <div class="question-card">
             <div class="question-number">${questionLabel}</div>
+            
+            ${q.section ? `<div style="font-weight:700; color:var(--primary); margin-bottom:8px;">${esc(q.section)}</div>` : ''}
+            
+            ${q.passage ? `<div style="background:var(--bg); border-left:4px solid var(--primary); padding:16px; border-radius:8px; margin-bottom:20px; font-size:15px; line-height:1.7; color:#333; font-style:italic;">${esc(q.passage)}</div>` : ''}
+            
             ${q.image ? `<img class="question-image" src="${q.image}" alt="Question image" onerror="this.style.display='none'">` : ''}
             <div class="question-text">${q.text || ''}</div>
             <div class="options-list">
@@ -3785,6 +3795,8 @@ function loadQuestions() {
         subject: q.subject || 'General',
         topic: q.topic || '',
         year: String(q.year || ''),
+        section: q.section || '',       // <-- ADD THIS
+        passage: q.passage || '',       // <-- ADD THIS
         options: opts,
         optionImages: optImgs,
         correct: (q.answer || 'A').toUpperCase(),
