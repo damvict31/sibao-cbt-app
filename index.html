@@ -263,7 +263,7 @@
       background: var(--primary-light); padding: 4px 12px;
       border-radius: var(--radius-full); margin-bottom: var(--space-4);
     }
-    .question-text { font-size: var(--text-lg); line-height: 1.7; color: var(--text); margin-bottom: var(--space-6); }
+    .question-text { font-size: var(--text-lg); line-height: 1.7; color: var(--text); margin-bottom: var(--space-6);  white-space: pre-wrap; /* <--- ADD THIS LINE */ }
     .question-image {
       max-width: 100%; max-height: 300px; object-fit: contain;
       border: none; border-radius: 0;
@@ -1979,7 +1979,7 @@ function renderWizardRail() {
   ];
   return steps.map(s => {
     const cls = state.wizard.step === s.n ? 'active' : (state.wizard.step > s.n ? 'done' : '');
-    return `<button class="practice-rail-item ${cls}" onclick="window.setWizardStep(${s.n})"><span class="pr-num">${state.wizard.step > s.n ? '✓' : s.n}</span><span>${s.label}</span></button>`;
+    return `<button class="practice-rail-item ${cls}" onclick="window.setWizardStep(${s.n})"><span class="pr-num">${state.wizard.step > s.n ? '?' : s.n}</span><span>${s.label}</span></button>`;
   }).join('');
 }
 
@@ -2008,7 +2008,7 @@ function renderWizardStep1() {
     <div class="pane-body">
       <div class="subject-chip-area" style="margin-bottom:var(--space-4);">
         ${selected.length === 0 ? `<span class="text-muted text-sm">No subjects yet — pick from the list below.</span>` :
-          selected.map(s => `<span class="subject-chip">${s.name}<span class="chip-x" onclick="event.stopPropagation(); window.removeSubject('${s.id}')">✕</span></span>`).join('')}
+          selected.map(s => `<span class="subject-chip">${s.name}<span class="chip-x" onclick="event.stopPropagation(); window.removeSubject('${s.id}')">?</span></span>`).join('')}
       </div>
       <div class="subject-search-wrap">
         ${ICONS.search}
@@ -2218,7 +2218,7 @@ function renderWizardStep3() {
           <p class="hint">Currently: <strong>${w.questionOrder === 'grouped' ? 'Subjects grouped' : 'All mixed (random)'}</strong></p>
           <label class="radio-opt ${w.questionOrder === 'grouped' ? 'selected' : ''}" onclick="window.setQuestionOrder('grouped')">
             <span class="ro-dot"></span>
-            <div class="ro-text"><h5>Keep subjects grouped</h5><p>Math → English → Physics</p></div>
+            <div class="ro-text"><h5>Keep subjects grouped</h5><p>Math ? English ? Physics</p></div>
           </label>
           <label class="radio-opt ${w.questionOrder === 'mixed' ? 'selected' : ''}" onclick="window.setQuestionOrder('mixed')">
             <span class="ro-dot"></span>
@@ -2521,7 +2521,7 @@ function renderMockExamRoom(exam) {
             ${q.passage ? `<div style="background:var(--bg); border-left:4px solid var(--primary); padding:16px; border-radius:8px; margin-bottom:20px; font-size:15px; line-height:1.7; color:#333; font-style:italic;">${esc(q.passage)}</div>` : ''}
             
             ${q.image ? `<img class="question-image" src="${q.image}" alt="Question image" onerror="this.style.display='none'">` : ''}
-            <div class="question-text">${q.text || ''}</div>
+                        <div class="question-text">${esc(q.text || '')}</div>
             <div class="options-list">
               ${optionOrder.map((origIdx, displayIdx) => {
                 const optText = options[origIdx] || '';
@@ -2694,7 +2694,7 @@ function renderPracticeExamRoom(exam) {
             ${q.passage ? `<div style="background:var(--bg); border-left:4px solid var(--primary); padding:16px; border-radius:8px; margin-bottom:20px; font-size:15px; line-height:1.7; color:#333; font-style:italic;">${esc(q.passage)}</div>` : ''}
             
             ${q.image ? `<img class="question-image" src="${q.image}" alt="Question image" onerror="this.style.display='none'">` : ''}
-            <div class="question-text">${q.text || ''}</div>
+            <div class="question-text">${esc(q.text || '')}</div>
             <div class="options-list">
               ${optionOrder.map((origIdx, displayIdx) => {
                 const optText = options[origIdx] || '';
@@ -3350,7 +3350,7 @@ function renderResultsDynamic() {
     <div class="result-stat"><div class="result-stat-value">${total}</div><div class="result-stat-label">Tests Taken</div></div>
     <div class="result-stat"><div class="result-stat-value success">${avgPct}%</div><div class="result-stat-label">Average Score</div></div>
     <div class="result-stat"><div class="result-stat-value success">${best}%</div><div class="result-stat-label">Best Score</div></div>
-    <div class="result-stat"><div class="result-stat-value">${passed}/${total}</div><div class="result-stat-label">Passed (≥50%)</div></div>
+    <div class="result-stat"><div class="result-stat-value">${passed}/${total}</div><div class="result-stat-label">Passed (=50%)</div></div>
   `;
   if (mine.length === 0) {
     table.innerHTML = `<p class="text-muted text-sm" style="padding:24px;text-align:center;">You haven't completed any tests yet. Start a practice session or mock exam to see your results here.</p>`;
@@ -3591,9 +3591,9 @@ function renderStudentMock() {
           <div class="mock-card-info">
             <div class="mock-card-title">${m.title}</div>
             <div class="mock-card-meta">
-              <span>📚 ${esc(subjectText)}</span>
-              <span>❓ ${m.questions || 0} questions</span>
-              <span>⏱ ${m.duration || '45 min'}</span>
+              <span>?? ${esc(subjectText)}</span>
+              <span>? ${m.questions || 0} questions</span>
+              <span>? ${m.duration || '45 min'}</span>
               <span class="badge ${m.status === 'published' ? 'badge-success' : 'badge-warning'}">${m.status || 'draft'}</span>
               ${m.end && m.end !== '—' ? `<span class="badge badge-warning">Ends ${esc(m.end)}</span>` : ''}
             </div>
@@ -3753,7 +3753,23 @@ function renderMockInstructions() {
 
 function esc(s) {
   if (s == null) return '';
-  return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  // Safely allow <br>, <b>, <i>, and <u> to render properly
+  const allowedTags = /<(\/?)(br|b|i|u)\s*\/?>/gi;
+  const placeholders = [];
+  
+  // Temporarily replace allowed tags with a placeholder
+  let clean = String(s).replace(allowedTags, (match) => {
+    placeholders.push(match);
+    return `___TAG_${placeholders.length - 1}___`;
+  });
+
+  // Escape everything else
+  clean = clean.replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+
+  // Put the allowed tags back so the browser renders them
+  clean = clean.replace(/___TAG_(\d+)___/g, (match, index) => placeholders[index]);
+  
+  return clean;
 }
 
 window.openModal = function(title, body, buttons = []) {
