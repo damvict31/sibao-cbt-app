@@ -965,7 +965,53 @@
     .result-row-actions { display: inline-flex; gap: 6px; align-items: center; }
     .global-time-plain { display: flex; flex-direction: column; gap: 6px; }
     .global-time-plain .form-input { max-width: 200px; }
-  </style>
+  
+    /* CALCULATOR STYLES */
+    .calc-toggle {
+      position: fixed; bottom: 30px; right: 30px; z-index: 1000;
+      width: 56px; height: 56px; border-radius: 50%;
+      background: var(--primary); color: white;
+      box-shadow: var(--shadow-lg); display: none; /* Hidden by default */
+      align-items: center; justify-content: center;
+      font-size: 24px; transition: transform 0.2s;
+    }
+    .calc-toggle:hover { transform: scale(1.05); }
+    .calc-toggle.visible { display: flex; } /* Shows only in exam room */
+
+    .calc-overlay {
+      position: fixed; inset: 0; z-index: 999; display: none;
+    }
+    .calc-overlay.open { display: block; }
+
+    .calc-panel {
+      position: fixed; bottom: 100px; right: 30px; z-index: 1000;
+      width: 280px; background: var(--surface); border: 1px solid var(--border);
+      border-radius: var(--radius-lg); box-shadow: var(--shadow-lg);
+      display: none; flex-direction: column; overflow: hidden;
+    }
+    .calc-panel.open { display: flex; }
+    
+    .calc-display {
+      background: var(--bg); padding: 20px 16px; font-size: 28px; font-weight: 700;
+      text-align: right; border-bottom: 1px solid var(--border); font-variant-numeric: tabular-nums;
+      min-height: 80px; word-wrap: break-word;
+    }
+    .calc-keys { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1px; background: var(--border); }
+    .calc-key {
+      background: var(--surface); padding: 18px 0; font-size: 18px; font-weight: 600;
+      text-align: center; transition: background 0.1s; border: none;
+    }
+    .calc-key:hover { background: var(--bg); }
+    .calc-key.op { color: var(--primary); background: var(--primary-light); }
+    .calc-key.eq { background: var(--primary); color: white; grid-column: span 2; }
+    .calc-key.eq:hover { background: var(--primary-hover); }
+    .calc-key.clear { color: var(--danger); background: var(--danger-light); }
+    .calc-close {
+      position: absolute; top: 10px; left: 10px; background: none; border: none;
+      font-size: 20px; color: var(--text-muted); cursor: pointer; z-index: 10;
+    }
+
+</style>
 </head>
 <body class="splash-locked">
 
@@ -1304,6 +1350,33 @@
   <div class="notif-list" id="notifList"></div>
 </div>
 
+<!-- CALCULATOR -->
+<div class="calc-overlay" id="calcOverlay" onclick="closeCalc()"></div>
+<button class="calc-toggle" id="calcToggle" onclick="toggleCalc(event)" title="Calculator">🧮</button>
+<div class="calc-panel" id="calcPanel">
+  <div class="calc-display" id="calcDisplay">0</div>
+  <div class="calc-keys">
+    <button class="calc-key clear" onclick="calcClear()">C</button>
+    <button class="calc-key op" onclick="calcInput('/')">÷</button>
+    <button class="calc-key op" onclick="calcInput('*')">×</button>
+    <button class="calc-key op" onclick="calcInput('-')">−</button>
+    <button class="calc-key" onclick="calcInput('7')">7</button>
+    <button class="calc-key" onclick="calcInput('8')">8</button>
+    <button class="calc-key" onclick="calcInput('9')">9</button>
+    <button class="calc-key op" onclick="calcInput('+')">+</button>
+    <button class="calc-key" onclick="calcInput('4')">4</button>
+    <button class="calc-key" onclick="calcInput('5')">5</button>
+    <button class="calc-key" onclick="calcInput('6')">6</button>
+    <button class="calc-key" onclick="calcBackspace()">⌫</button>
+    <button class="calc-key" onclick="calcInput('1')">1</button>
+    <button class="calc-key" onclick="calcInput('2')">2</button>
+    <button class="calc-key" onclick="calcInput('3')">3</button>
+    <button class="calc-key eq" onclick="calcEquals()">=</button>
+    <button class="calc-key" onclick="calcInput('0')" style="grid-column: span 2;">0</button>
+    <button class="calc-key" onclick="calcInput('.')">.</button>
+  </div>
+</div>
+
 <div class="modal-overlay" id="modal">
   <div class="modal" role="dialog" aria-modal="true">
     <div class="modal-header">
@@ -1363,6 +1436,45 @@ window.dispatchEvent(new Event('firebase-ready'));
 
 <!-- MAIN APP -->
 <script>
+
+/* ===== CALCULATOR LOGIC ===== */
+let calcStr = '';
+function toggleCalc(e) {
+  if(e) e.stopPropagation();
+  const panel = document.getElementById('calcPanel');
+  const overlay = document.getElementById('calcOverlay');
+  panel.classList.add('open');
+  overlay.classList.add('open');
+}
+function closeCalc() {
+  document.getElementById('calcPanel').classList.remove('open');
+  document.getElementById('calcOverlay').classList.remove('open');
+}
+function calcInput(val) {
+  if (calcStr === '0' || calcStr === 'Error') calcStr = '';
+  calcStr += val;
+  document.getElementById('calcDisplay').textContent = calcStr || '0';
+}
+function calcClear() {
+  calcStr = '';
+  document.getElementById('calcDisplay').textContent = '0';
+}
+function calcBackspace() {
+  calcStr = calcStr.slice(0, -1);
+  document.getElementById('calcDisplay').textContent = calcStr || '0';
+}
+function calcEquals() {
+  try {
+    if (!calcStr) return;
+    const result = new Function('return ' + calcStr)();
+    calcStr = String(Math.round(result * 100000000) / 100000000); 
+    document.getElementById('calcDisplay').textContent = calcStr;
+  } catch (e) {
+    calcStr = 'Error';
+    document.getElementById('calcDisplay').textContent = 'Error';
+  }
+}
+
 const ICONS = {
   check: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" width="12" height="12"><polyline points="20 6 9 17 4 12"/></svg>`,
   clock: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>`,
@@ -1413,11 +1525,12 @@ const state = {
     mock: { mockId: null, subject: null, subjects: [], currentSubjectIndex: 0, currentQuestion: 1, totalQuestions: 40, timer: 120 * 60, answers: {}, flagged: new Set(), timerInterval: null, questionList: [], questionLists: {}, pendingMockId: null, mockInstructions: '', mockTitle: '', multiSubject: false, subjectTimers: null, timeMode: 'one', _submitted: false, _submitting: false }
   },
   wizard: {
-    step: 1, selectedSubjects: [], configs: {},
+    
+step: 1, selectedSubjects: [], configs: {},
     timeMode: 'one', questionOrder: 'grouped',
     globalTime: 40,
     searchQuery: '', openConfigId: null,
-    shuffleQuestions: false, shuffleOptions: false
+    shuffleQuestions: true, shuffleOptions: true
   }
 };
 
@@ -1737,8 +1850,16 @@ window.studentNav = function(view) {
     case 'help': content.innerHTML = renderStudentHelp(); break;
     default: content.innerHTML = renderStudentDashboard();
   }
-  if (view.endsWith('-exam') || view === 'review') document.body.classList.add('exam-mode');
+    if (view.endsWith('-exam') || view === 'review') document.body.classList.add('exam-mode');
   else document.body.classList.remove('exam-mode');
+
+  const calcBtn = document.getElementById('calcToggle');
+  if (view.endsWith('-exam')) {
+    if (calcBtn) calcBtn.classList.add('visible');
+  } else {
+    if (calcBtn) calcBtn.classList.remove('visible');
+    closeCalc(); 
+  }
   updateActiveNav(view);
   document.getElementById('studentSidebar').classList.remove('open');
   window.scrollTo({ top: 0, behavior: 'smooth' });
