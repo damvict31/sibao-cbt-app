@@ -5276,14 +5276,14 @@ document.addEventListener('keydown', function(e) {
   if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'q') {
     e.preventDefault();
     
-    // If running in Nativefier, send the close signal
+    // Check if running in Nativefier/Electron
     if (window.process && window.process.type === 'renderer') {
-      // Requires nodeIntegration to be enabled in Nativefier
-      const { ipcRenderer } = require('electron');
-      ipcRenderer.send('close-app');
-    } else {
-      // Fallback for browser testing
-      console.log('Ctrl+Q pressed');
+      try {
+        const { ipcRenderer } = require('electron');
+        ipcRenderer.send('close-app');
+      } catch (err) {
+        console.error("IPC error:", err);
+      }
     }
   }
 });
