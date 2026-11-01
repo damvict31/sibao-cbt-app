@@ -1832,7 +1832,7 @@
     <button class="calc-key clear" onclick="calcClear()">C</button>
     <button class="calc-key op" onclick="calcInput('/')">÷</button>
     <button class="calc-key op" onclick="calcInput('*')">×</button>
-    <button class="calc-key op" onclick="calcInput('-')">−</button>
+    <button class="calc-key op" onclick="calcInput('-')">-</button>
 
     <button class="calc-key" onclick="calcInput('7')">7</button>
     <button class="calc-key" onclick="calcInput('8')">8</button>
@@ -1842,7 +1842,7 @@
     <button class="calc-key" onclick="calcInput('4')">4</button>
     <button class="calc-key" onclick="calcInput('5')">5</button>
     <button class="calc-key" onclick="calcInput('6')">6</button>
-    <button class="calc-key op" onclick="calcBackspace()">⌫</button>
+    <button class="calc-key op" onclick="calcBackspace()">?</button>
 
     <button class="calc-key" onclick="calcInput('1')">1</button>
     <button class="calc-key" onclick="calcInput('2')">2</button>
@@ -2965,7 +2965,7 @@ function renderWizardRail() {
   ];
   return steps.map(s => {
     const cls = state.wizard.step === s.n ? 'active' : (state.wizard.step > s.n ? 'done' : '');
-    return `<button class="practice-rail-item ${cls}" onclick="window.setWizardStep(${s.n})"><span class="pr-num">${state.wizard.step > s.n ? '✓' : s.n}</span><span>${s.label}</span></button>`;
+    return `<button class="practice-rail-item ${cls}" onclick="window.setWizardStep(${s.n})"><span class="pr-num">${state.wizard.step > s.n ? '?' : s.n}</span><span>${s.label}</span></button>`;
   }).join('');
 }
 
@@ -2990,7 +2990,7 @@ function renderWizardStep1() {
     <div class="pane-body">
       <div class="subject-chip-area" style="margin-bottom:var(--space-4);">
         ${selected.length === 0 ? `<span class="text-muted text-sm">No subjects yet — pick from the list below.</span>` :
-          selected.map(s => `<span class="subject-chip">${s.name}<span class="chip-x" onclick="event.stopPropagation(); window.removeSubject('${s.id}')">✕</span></span>`).join('')}
+          selected.map(s => `<span class="subject-chip">${s.name}<span class="chip-x" onclick="event.stopPropagation(); window.removeSubject('${s.id}')">?</span></span>`).join('')}
       </div>
       <div class="subject-search-wrap">
         ${ICONS.search}
@@ -3214,7 +3214,7 @@ function renderWizardStep3() {
           <p class="hint">Currently: <strong>${w.questionOrder === 'grouped' ? 'Subjects grouped' : 'All mixed (random)'}</strong></p>
           <label class="radio-opt ${w.questionOrder === 'grouped' ? 'selected' : ''}" onclick="window.setQuestionOrder('grouped')">
             <span class="ro-dot"></span>
-            <div class="ro-text"><h5>Keep subjects grouped</h5><p>Math → English → Physics</p></div>
+            <div class="ro-text"><h5>Keep subjects grouped</h5><p>Math ? English ? Physics</p></div>
           </label>
           <label class="radio-opt ${w.questionOrder === 'mixed' ? 'selected' : ''}" onclick="window.setQuestionOrder('mixed')">
             <span class="ro-dot"></span>
@@ -3317,26 +3317,42 @@ function renderWizard() {
 window.startPracticeFromWizard = function() {
   if (!state.currentUser) { window.openLoginPage(); return; }
   const w = state.wizard;
- if (w.selectedSubjects.length !== 4) { 
-  window.openModal('Invalid Subject Count',
-    `<p>Mock Mode requires exactly <strong>4 subjects</strong> (English + 3 others).</p>
-     <p class="mt-3 text-muted text-sm">You currently have ${w.selectedSubjects.length} subject(s) selected.</p>`,
-    [{ label: 'OK', class: 'btn-primary', action: 'window.closeModal()' }]);
-  return; 
-}
-  const globalTime = Math.max(1, parseInt(w.globalTime) || 40);
-  
+
+  // ===== MODE-SPECIFIC VALIDATION =====
   if (w.mode === 'mock') {
+    // Mock requires exactly 4 subjects with English compulsory
     const hasEnglish = w.selectedSubjects.some(s => s.name.toLowerCase().includes('english'));
-    if (!hasEnglish) { 
-  window.openModal('English Required',
-    `<p>English Language is compulsory for Mock Mode.</p>
-     <p class="mt-3 text-muted text-sm">Please add English Language to your selected subjects.</p>`,
-    [{ label: 'OK', class: 'btn-primary', action: 'window.closeModal()' }]);
-  return; 
-}
-    if (w.selectedSubjects.length !== 4) { alert('Mock Mode requires exactly 4 subjects (English + 3 others).'); return; }
+    if (!hasEnglish) {
+      window.openModal('English Required',
+        `<p>English Language is compulsory for Mock Mode.</p>
+         <p class="mt-3 text-muted text-sm">Please add English Language to your selected subjects.</p>`,
+        [{ label: 'OK', class: 'btn-primary', action: 'window.closeModal()' }]);
+      return;
+    }
+    if (w.selectedSubjects.length !== 4) {
+      window.openModal('Invalid Subject Count',
+        `<p>Mock Mode requires exactly <strong>4 subjects</strong> (English + 3 others).</p>
+         <p class="mt-3 text-muted text-sm">You currently have ${w.selectedSubjects.length} subject(s) selected.</p>`,
+        [{ label: 'OK', class: 'btn-primary', action: 'window.closeModal()' }]);
+      return;
+    }
+  } else {
+    // Practice: allow 1 to 4 subjects (no English requirement)
+    if (w.selectedSubjects.length === 0) {
+      window.openModal('No Subjects Selected',
+        `<p>Please select at least one subject to start practice.</p>`,
+        [{ label: 'OK', class: 'btn-primary', action: 'window.closeModal()' }]);
+      return;
+    }
+    if (w.selectedSubjects.length > 4) {
+      window.openModal('Too Many Subjects',
+        `<p>You can select a maximum of <strong>4 subjects</strong> for a single session.</p>`,
+        [{ label: 'OK', class: 'btn-primary', action: 'window.closeModal()' }]);
+      return;
+    }
   }
+
+  const globalTime = Math.max(1, parseInt(w.globalTime) || 40);
 
   const exam = state.exam.practice;
   exam.subjects = w.selectedSubjects.map(s => {
@@ -3351,6 +3367,7 @@ window.startPracticeFromWizard = function() {
       year: cfg.year || 'all'
     };
   });
+  exam.sessionMode = (w.mode === 'mock') ? 'mock' : 'practice';   // <-- ADD THIS
   exam.timeMode = 'one';
   exam.questionOrder = w.questionOrder;
   exam.shuffleQuestions = w.shuffleQuestions;
@@ -3400,6 +3417,7 @@ window.startPracticeFromWizard = function() {
 
   exam.totalQuestions = totalQ || 1;
   exam.timer = globalTime * 60;
+  exam.initialTime = exam.timer;
   exam.subjectTimers = null;
 
   if (w.questionOrder === 'mixed') {
@@ -3948,6 +3966,10 @@ window.submitExamFor = async function(type, forceFail = false) {
   if (exam._submitted) return;
   exam._submitted = true;
   exam._submitting = false;
+  // <-- ADD THIS BLOCK: honour the mode the user selected in the wizard
+  if (type === 'practice' && exam.sessionMode === 'mock') {
+    type = 'mock';
+  }
   window.closeModal();
   window.deactivateExamProctoring();
 
@@ -3968,48 +3990,50 @@ window.submitExamFor = async function(type, forceFail = false) {
     section: q.section || '', passage: q.passage || ''
   });
 
-  let rawCorrect = 0;
-  let rawTotal = 0;
+let rawCorrect = 0;
+let rawTotal = 0;
+const subjectScores = [];
 
-  // Build Snapshot & Calculate Raw Scores
-  if (type === 'practice') {
-    if (exam.questionOrder === 'mixed' && exam.mixedList) {
-      snapshot.questionList = exam.mixedList.map(mapQuestion);
-      const s = computeScore(exam.answers, snapshot.questionList, { isMulti: false, subjectIndex: 0 });
-      rawCorrect = s.correct; rawTotal = s.total;
-    } else if (exam.subjects.length === 1) {
-      const list = (exam.questionLists[0] || []).map(mapQuestion);
-      snapshot.questionList = list;
-      const sc = computeScore(exam.answers, list, { isMulti: false, subjectIndex: 0 });
-      rawCorrect = sc.correct; rawTotal = sc.total;
-    } else {
-      snapshot.questionLists = {};
-      exam.subjects.forEach((s, idx) => {
-        const list = (exam.questionLists[idx] || []).map(mapQuestion);
-        snapshot.questionLists[idx] = list;
-        const sc = computeScore(exam.answers, list, { isMulti: true, subjectIndex: idx });
-        rawCorrect += sc.correct; rawTotal += sc.total;
-      });
-      snapshot.subjects = exam.subjects.map(s => ({ name: s.name }));
-      snapshot.multiSubject = true;
-    }
-  } else if (type === 'mock') {
-    if (exam.multiSubject && exam.questionLists && exam.subjects && exam.subjects.length > 1) {
-      snapshot.questionLists = {};
-      exam.subjects.forEach((s, idx) => {
-        const list = (exam.questionLists[idx] || []).map(mapQuestion);
-        snapshot.questionLists[idx] = list;
-        const sc = computeScore(exam.answers, list, { isMulti: true, subjectIndex: idx });
-        rawCorrect += sc.correct; rawTotal += sc.total;
-      });
-      snapshot.subjects = exam.subjects.map(s => ({ name: s.name }));
-      snapshot.multiSubject = true;
-    } else {
-      snapshot.questionList = (exam.questionList || []).map(mapQuestion);
-      const s = computeScore(exam.answers, snapshot.questionList, { isMulti: false, subjectIndex: 0 });
-      rawCorrect = s.correct; rawTotal = s.total;
-    }
-  }
+// --- Build snapshot + per-subject scores from the ACTUAL exam shape, not 'type' ---
+const isMulti = !!(exam.subjects && exam.subjects.length > 1 && exam.questionLists);
+const isMixedPractice = exam.questionOrder === 'mixed' && Array.isArray(exam.mixedList);
+
+if (isMixedPractice) {
+  // Mixed practice: one flat list, single bucket
+  const list = exam.mixedList.map(mapQuestion);
+  snapshot.questionList = list;
+  snapshot.subjects = null;
+  snapshot.questionLists = null;
+  snapshot.multiSubject = false;
+  const s = computeScore(exam.answers, list, { isMulti: false, subjectIndex: 0 });
+  rawCorrect = s.correct; rawTotal = s.total;
+  subjectScores.push({ name: 'Mixed Practice', correct: s.correct, total: s.total, pct: s.pct });
+} else if (isMulti) {
+  // Multi-subject (practice wizard multi, wizard-mock, or mock with subjects)
+  snapshot.questionLists = {};
+  exam.subjects.forEach((s, idx) => {
+    const list = (exam.questionLists[idx] || []).map(mapQuestion);
+    snapshot.questionLists[idx] = list;
+    const sc = computeScore(exam.answers, list, { isMulti: true, subjectIndex: idx });
+    rawCorrect += sc.correct; rawTotal += sc.total;
+    subjectScores.push({ name: s.name, correct: sc.correct, total: sc.total, pct: sc.pct });
+  });
+  snapshot.subjects = exam.subjects.map(s => ({ name: s.name }));
+  snapshot.multiSubject = true;
+} else {
+  // Single subject — works for practice single and mock single
+  const rawList = (exam.questionLists && exam.questionLists[0]) || exam.questionList || [];
+  const list = rawList.map(mapQuestion);
+  snapshot.questionList = list;
+  snapshot.questionLists = null;
+  snapshot.subjects = null;
+  snapshot.multiSubject = false;
+  const name = (exam.subjects && exam.subjects[0] && exam.subjects[0].name)
+    || exam.subject || 'General';
+  const sc = computeScore(exam.answers, list, { isMulti: false, subjectIndex: 0 });
+  rawCorrect = sc.correct; rawTotal = sc.total;
+  subjectScores.push({ name, correct: sc.correct, total: sc.total, pct: sc.pct });
+}
 
   // --- NEW JAMB SCORING LOGIC ---
   // JAMB scores are over 400 (Mock) or 100 (Practice)
@@ -4051,6 +4075,7 @@ window.submitExamFor = async function(type, forceFail = false) {
     attempted: answered,
     total: finalTotal, // Store 400 or 100
     pct,
+    subjectScores,          // <-- ADD THIS LINE
     duration: timeUsed,
     date: new Date().toISOString().slice(0, 10),
     createdAt: Date.now(),
@@ -4441,10 +4466,10 @@ function renderResultsDynamic() {
   const table = document.getElementById('resultsHistoryTable');
   const recCard = document.getElementById('recommendationCard');
   const recList = document.getElementById('recommendationList');
-  
+
   if (!grid || !table) return;
   const mine = state.userResults || [];
-  
+
   if (mine.length === 0) {
     grid.innerHTML = `<div class="text-muted text-sm">No results yet.</div>`;
     if (recCard) recCard.style.display = 'none';
@@ -4452,14 +4477,13 @@ function renderResultsDynamic() {
     return;
   }
 
-  // Stats based on the most recent test
-  const latest = mine[0]; 
+  const latest = mine[0];
   const correct = latest.answered || 0;
   const total = latest.total || 0;
   const pct = latest.pct || 0;
   const incorrect = (latest.attempted || 0) - correct;
   const unanswered = total - (latest.attempted || 0);
-  
+
   grid.innerHTML = `
     <div class="result-stat"><div class="result-stat-value">${correct}/${total}</div><div class="result-stat-label">Total Score</div></div>
     <div class="result-stat"><div class="result-stat-value" style="color:${pct >= 50 ? 'var(--success)' : 'var(--danger)'}">${pct}%</div><div class="result-stat-label">Percentage</div></div>
@@ -4469,12 +4493,13 @@ function renderResultsDynamic() {
     <div class="result-stat"><div class="result-stat-value">${Math.floor((latest.duration || 0)/60)}:${String((latest.duration || 0)%60).padStart(2,'0')}</div><div class="result-stat-label">Time Used</div></div>
   `;
 
-  // Build Recommendations based on Subject averages
+  // Recommendations: lowest 4
   const subjScores = {};
   mine.forEach(r => {
     if (r.subject && r.pct !== undefined) {
       r.subject.split(',').forEach(s => {
         const name = s.trim();
+        if (!name) return;
         if (!subjScores[name]) subjScores[name] = { total: 0, count: 0 };
         subjScores[name].total += r.pct;
         subjScores[name].count++;
@@ -4485,19 +4510,19 @@ function renderResultsDynamic() {
   const lowest = Object.entries(subjScores)
     .map(([name, data]) => ({ name, avg: Math.round(data.total / data.count) }))
     .sort((a, b) => a.avg - b.avg)
-    .slice(0, 3);
+    .slice(0, 4);
 
   if (recCard && recList && lowest.length > 0) {
     recCard.style.display = 'block';
     recList.innerHTML = lowest.map(s => `
       <span class="badge" style="background: ${s.avg < 50 ? 'var(--danger-light)' : 'var(--warning-light)'}; color: ${s.avg < 50 ? 'var(--danger)' : 'var(--gold)'}; padding: 6px 12px; font-size: 13px;">
-        ${s.name} — ${s.avg}%
+        ${esc(s.name)} — ${s.avg}%
       </span>
     `).join('');
   }
 
-  // History Table
-  table.innerHTML = `
+  // History table — subject cell now lists each subject + its score
+    table.innerHTML = `
     <div style="border:1px solid var(--border);border-radius:var(--radius-md);overflow:hidden;">
       <table style="width:100%;border-collapse:collapse;font-size:var(--text-sm);">
         <thead style="background:var(--bg);">
@@ -4510,20 +4535,37 @@ function renderResultsDynamic() {
           </tr>
         </thead>
         <tbody>
-          ${mine.map(r => `
-            <tr style="border-bottom:1px solid var(--border);">
-              <td style="padding:12px 16px;">${r.date || '—'}</td>
-              <td style="padding:12px 16px;text-transform:capitalize;">${r.type || '—'}</td>
-              <td style="padding:12px 16px;">${r.subject || '—'}</td>
-              <td style="padding:12px 16px;"><span class="badge ${r.pct >= 75 ? 'badge-success' : r.pct >= 50 ? 'badge-warning' : 'badge-danger'}">${r.score}</span></td>
-              <td style="padding:12px 16px;">
-                <div class="result-row-actions">
-                  <button class="btn btn-secondary btn-sm" onclick="window.openReview('${r.id}')">Correction</button>
-                  <button class="btn btn-danger btn-sm" onclick="window.deleteResult('${r.id}')">Delete</button>
-                </div>
-              </td>
-            </tr>
-          `).join('')}
+          ${mine.map(r => {
+            let subjectCell = '';
+            const perSub = Array.isArray(r.subjectScores) ? r.subjectScores : [];
+            if (perSub.length > 0) {
+              // Compact inline pills — wraps automatically, one line where space allows
+              subjectCell = `<div style="display:flex;flex-wrap:wrap;gap:4px;">${perSub.map(s => {
+                const isPass = s.pct >= 50;
+                const bg = isPass ? 'var(--success-light)' : 'var(--danger-light)';
+                const fg = isPass ? 'var(--success)' : 'var(--danger)';
+                return `<span style="display:inline-flex;align-items:center;gap:4px;padding:2px 8px;border-radius:999px;background:${bg};color:${fg};font-size:11px;font-weight:600;white-space:nowrap;">
+                  ${esc(s.name)} <strong>${s.correct}/${s.total}</strong>
+                </span>`;
+              }).join('')}</div>`;
+            } else {
+              subjectCell = `<span>${r.subject || '—'}</span>`;
+            }
+            return `
+              <tr style="border-bottom:1px solid var(--border);">
+                <td style="padding:10px 16px;white-space:nowrap;vertical-align:middle;">${r.date || '—'}</td>
+                <td style="padding:10px 16px;text-transform:capitalize;vertical-align:middle;">${r.type || '—'}</td>
+                <td style="padding:10px 16px;vertical-align:middle;">${subjectCell}</td>
+                <td style="padding:10px 16px;vertical-align:middle;"><span class="badge ${r.pct >= 75 ? 'badge-success' : r.pct >= 50 ? 'badge-warning' : 'badge-danger'}">${r.score}</span></td>
+                <td style="padding:10px 16px;vertical-align:middle;">
+                  <div class="result-row-actions">
+                    <button class="btn btn-secondary btn-sm" onclick="window.openReview('${r.id}')">Correction</button>
+                    <button class="btn btn-danger btn-sm" onclick="window.deleteResult('${r.id}')">Delete</button>
+                  </div>
+                </td>
+              </tr>
+            `;
+          }).join('')}
         </tbody>
       </table>
     </div>
@@ -4550,7 +4592,7 @@ window.startRecommendedPractice = function() {
   const lowestList = Object.entries(subjScores)
     .map(([key, data]) => ({ key, name: data.displayName, avg: data.total/data.count }))
     .sort((a,b) => a.avg - b.avg)
-    .slice(0, 3);
+    .slice(0, 4);
 
   state.wizard.selectedSubjects = []; 
   state.wizard.configs = {};
@@ -4996,9 +5038,9 @@ function esc(s) {
   clean = clean.replace(/simolify/gi, 'Simplify');
 
   const entityMap = {
-    '&#x2212;': '−', '&#x2213;': '∓', '&#x00D7;': '×', '&#x00F7;': '÷',
-    '&#x221A;': '√', '&#x3C0;': 'π', '&#x221E;': '∞', '&#x2260;': '≠',
-    '&#x2264;': '≤', '&#x2265;': '≥', '&#x2211;': '∑', '&#x222B;': '∫',
+    '&#x2212;': '-', '&#x2213;': '±', '&#x00D7;': '×', '&#x00F7;': '÷',
+    '&#x221A;': 'v', '&#x3C0;': 'p', '&#x221E;': '8', '&#x2260;': '?',
+    '&#x2264;': '=', '&#x2265;': '=', '&#x2211;': '?', '&#x222B;': '?',
     '&amp;': '&', '&lt;': '<', '&gt;': '>', '&quot;': '"', '&#39;': "'", '&nbsp;': ' '
   };
   clean = clean.replace(/&#x[0-9a-fA-F]+;|&[a-zA-Z]+;|&#\d+;/g, (match) => {
