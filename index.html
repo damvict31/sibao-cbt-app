@@ -1974,17 +1974,26 @@
     initParticles();
   });
     // Failsafe to ensure the app loads
-  setTimeout(() => {
+   setTimeout(() => {
     if (!finished) {
-      // Check if user is logged in before dismissing
-      if (typeof window.state !== 'undefined' && window.state.currentUser) {
-        window.dismissSplash();
-        window.studentNav('dashboard');
-      } else {
-        // If not logged in, show login page
-        window.dismissSplash();
-        window.openLoginPage();
-      }
+      // Wait a moment for Firebase to resolve auth state
+      let waited = 0;
+      const poll = setInterval(() => {
+        waited += 100;
+        const loggedIn = typeof window.__isLoggedIn === 'function' && window.__isLoggedIn();
+        const firebaseReady = typeof window.__fbAuth !== 'undefined';
+
+        if (loggedIn || (firebaseReady && waited >= 2000) || waited >= 5000) {
+          clearInterval(poll);
+          if (loggedIn) {
+            window.dismissSplash();
+            window.studentNav('dashboard');
+          } else {
+            window.dismissSplash();
+            window.openLoginPage();
+          }
+        }
+      }, 100);
     }
   }, 5000);
 
@@ -2285,6 +2294,10 @@ function sanitizeForFirebase(obj) {
   if (Array.isArray(obj)) {
     return obj.map(item => sanitizeForFirebase(item));
   }
+  if (typeof obj === 'number') {
+    return Number.isFinite(obj) ? obj : 0;
+  }
+
   if (typeof obj === 'object') {
     const out = {};
     Object.keys(obj).forEach(key => {
@@ -2299,19 +2312,24 @@ function sanitizeForFirebase(obj) {
 
 function findStoredAnswer(answers, opts) {
   if (!answers || typeof answers !== 'object') return undefined;
+
   const candidates = [];
+
   if (opts.isMulti) {
+    // Only use subject-specific keys — no dangerous fallback
     candidates.push(`m-${opts.subjectIndex}-${opts.questionNum}`);
     candidates.push(`p-${opts.subjectIndex}-${opts.questionNum}`);
     candidates.push(`${opts.subjectIndex}-${opts.questionNum}`);
   } else {
+    // Single subject / mixed mode
     candidates.push(`${opts.subjectIndex}-${opts.questionNum}`);
     candidates.push(`p-${opts.subjectIndex}-${opts.questionNum}`);
+    candidates.push(`m-${opts.questionNum}`);
+    candidates.push(`q-${opts.questionNum}`);
+    candidates.push(`${opts.questionNum}`);
+    candidates.push(opts.questionNum);
   }
-  candidates.push(`m-${opts.questionNum}`);
-  candidates.push(`q-${opts.questionNum}`);
-  candidates.push(`${opts.questionNum}`);
-  candidates.push(opts.questionNum);
+
   for (const k of candidates) {
     if (k === undefined || k === null) continue;
     const v = answers[k];
@@ -2324,11 +2342,19 @@ function computeScore(answers, questions, opts) {
   if (!questions || questions.length === 0) return { correct: 0, total: 0, pct: 0 };
   let correct = 0;
   questions.forEach((q, i) => {
-    const a = findStoredAnswer(answers || {}, {
-      isMulti: !!opts.isMulti,
-      subjectIndex: opts.subjectIndex != null ? opts.subjectIndex : 0,
-      questionNum: i + 1
-    });
+    let a;
+
+    // Best path: if the question knows its own answer key, use it directly.
+    if (q._answerKey && answers && answers[q._answerKey] !== undefined && answers[q._answerKey] !== null) {
+      a = answers[q._answerKey];
+    } else {
+      a = findStoredAnswer(answers || {}, {
+        isMulti: !!opts.isMulti,
+        subjectIndex: opts.subjectIndex != null ? opts.subjectIndex : 0,
+        questionNum: i + 1
+      });
+    }
+
     if (a === undefined || a === null) return;
     const correctLetter = (q.correct || 'A').toUpperCase();
     const correctIdx = LETTERS.indexOf(correctLetter);
@@ -2375,8 +2401,14 @@ function rebuildSubjectsFromQuestions() {
     years: Array.from(s.years).sort()
   })).filter(s => s.name);
 
-  console.log('[Subjects] Built from questions:', state.subjects.map(s => `${s.name} (${s.questions})`));
-  if (state.studentView === 'practice') renderWizard();
+    console.log('[Subjects] Built from questions:', state.subjects.map(s => `${s.name} (${s.questions})`));
+  // Refresh whichever view is currently visible so it picks up the new subjects
+  if (state.studentView === 'practice') {
+    renderWizard();
+  } else if (state.studentView === 'dashboard') {
+    const content = document.getElementById('studentContent');
+    if (content) content.innerHTML = renderStudentDashboard();
+  }
 }
 
 window.togglePassword = function(inputId, iconId) {
@@ -2458,34 +2490,109 @@ window.handleLogin = async function(e) {
 
 window.handleSignUp = async function(e) {
   e.preventDefault();
+
   const name = document.getElementById('signupName').value.trim();
   const email = document.getElementById('signupEmail').value.trim();
   const cls = document.getElementById('signupClass').value;
   const pwd = document.getElementById('signupPassword').value;
   const confirm = document.getElementById('signupConfirm').value;
-  const err = document.getElementById('signupError');
+  const err = document.getElementById('signupError');       // ✅ correct name
   const btn = document.getElementById('signupSubmitBtn');
+
   err.textContent = '';
-  if (!name || !email || !cls || !pwd || !confirm) { err.textContent = 'Please fill in all fields.'; return false; }
-  if (pwd.length < 6) { err.textContent = 'Password must be at least 6 characters.'; return false; }
-  if (pwd !== confirm) { err.textContent = 'Passwords do not match.'; return false; }
-  if (!window.__fbCreateUser) { err.textContent = 'Firebase not loaded yet. Reload the page.'; return false; }
+  err.style.color = '';
+
+  if (!name || !email || !cls || !pwd || !confirm) {
+    err.textContent = 'Please fill in all fields.';
+    return false;
+  }
+  if (pwd.length < 6) {
+    err.textContent = 'Password must be at least 6 characters.';
+    return false;
+  }
+  if (pwd !== confirm) {
+    err.textContent = 'Passwords do not match.';
+    return false;
+  }
+  if (!window.__fbCreateUser) {
+    err.textContent = 'Firebase not loaded yet. Reload the page.';
+    return false;
+  }
+
   btn.disabled = true;
   btn.innerHTML = '<span class="auth-spinner"></span> CREATING ACCOUNT...';
+
+  // Slow-network warning (uses `err`, not `errEl`)
+  const slowTimer = setTimeout(() => {
+    if (btn.disabled) {
+      err.style.color = 'var(--gold)';
+      err.textContent = 'Still working — your network seems slow. Please wait...';
+    }
+  }, 6000);
+
   try {
     const userCred = await window.__fbCreateUser(window.__fbAuth, email, pwd);
-    await window.__fbSet(window.__fbRef(window.__fbDb, 'students/' + userCred.user.uid), {
+
+    try {
+      await window.__fbSet(window.__fbRef(window.__fbDb, 'students/' + userCred.user.uid), {
+        uid: userCred.user.uid,
+        name: name,
+        username: email.split('@')[0],
+        email: email,
+        class: cls,
+        status: 'active',
+        createdAt: Date.now()
+      });
+    } catch (dbErr) {
+      console.error('[Signup] DB write failed:', dbErr);
+      // Not fatal — the auth user exists, so continue
+    }
+
+    clearTimeout(slowTimer);
+
+    // Update local state immediately (don't wait for onAuthStateChanged)
+    const displayName = name;
+    state.currentUser = userCred.user;
+    state.userProfile = {
       uid: userCred.user.uid,
-      name, username: email.split('@')[0], email,
-      class: cls, status: 'active', createdAt: Date.now()
-    });
-  } catch (err) {
-    err.textContent = prettyAuthError(err.code);
+      name: displayName,
+      firstName: displayName.split(' ')[0],
+      initials: displayName.split(' ').map(w => w[0]).slice(0, 2).join('').toUpperCase(),
+      id: 'SIBAO/2025/' + userCred.user.uid.slice(0, 6).toUpperCase(),
+      class: cls,
+      email: email
+    };
+
+    updateAuthUI();
+    closeAllAuthPages();
+    loadStudentResults();
+    addNotification('Account Created', 'Welcome to SIBAO CBT, ' + state.userProfile.firstName + '!');
+    window.studentNav('dashboard');
+
+    // Reset button so it's fresh if they come back
+    btn.disabled = false;
+    btn.innerHTML = 'CREATE ACCOUNT';
+
+  } catch (authErr) {
+    clearTimeout(slowTimer);
+    console.error('[Signup] Auth error:', authErr);
+
+    err.style.color = '';
+    let msg = prettyAuthError(authErr.code);
+    if (authErr.code === 'auth/email-already-in-use') {
+      msg = 'This email is already registered. Try logging in instead.';
+    } else if (!authErr.code) {
+      msg = 'Network problem — check your connection and try again. (If you opened the file directly, please use the hosted URL.)';
+    }
+    err.textContent = msg;
+
     btn.disabled = false;
     btn.innerHTML = 'CREATE ACCOUNT';
   }
+
   return false;
 };
+
 
 window.handleForgotPassword = async function(e) {
   e.preventDefault();
@@ -2588,16 +2695,19 @@ function updateAuthUI() {
 function canAccessView(view) { return !!state.currentUser || view === 'dashboard'; }
 
 window.studentNav = function(view) {
-  if (!canAccessView(view)) {
+    if (!canAccessView(view)) {
     document.getElementById('studentContent').innerHTML = renderLoginRequired();
+    state.studentView = 'dashboard';
     updateActiveNav('dashboard');
     document.getElementById('studentSidebar').classList.remove('open');
     return;
   }
   const skipHistory = ['practice-exam', 'mock-exam', 'mock-instructions', 'review'];
-  if (state.studentView && state.studentView !== view && !skipHistory.includes(state.studentView)) {
-    state.viewHistory.push(state.studentView);
-    if (state.viewHistory.length > 20) state.viewHistory.shift();
+    if (state.studentView && state.studentView !== view && !skipHistory.includes(state.studentView)) {
+    if (state.viewHistory[state.viewHistory.length - 1] !== state.studentView) {
+      state.viewHistory.push(state.studentView);
+      if (state.viewHistory.length > 20) state.viewHistory.shift();
+    }
   }
   state.previousView = state.studentView;
   state.studentView = view;
@@ -2728,6 +2838,15 @@ document.addEventListener('click', function(e) {
   }
 });
 
+document.addEventListener('click', function(e) {
+  if (!e.target.closest('.ms-dropdown') && !e.target.closest('.year-dropdown-wrap')) {
+    document.querySelectorAll('.ms-panel.open').forEach(p => p.classList.remove('open'));
+    document.querySelectorAll('.ms-trigger.open').forEach(t => t.classList.remove('open'));
+    document.querySelectorAll('.year-dropdown-panel.open').forEach(p => p.classList.remove('open'));
+    document.querySelectorAll('.year-dropdown-trigger.open').forEach(t => t.classList.remove('open'));
+  }
+});
+
 function renderStudentDashboard() {
   return `
     <div class="fade-in">
@@ -2777,8 +2896,14 @@ function renderStudentDashboard() {
       <div class="section-header mt-4 mb-3"><h2>Practice by Subject</h2></div>
       <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px; margin-bottom: 24px;">
         ${(state.subjects || []).map(s => {
-          const resultsForSub = (state.userResults || []).filter(r => (r.subject || '').toLowerCase().includes(s.name.toLowerCase()));
-          const avg = resultsForSub.length ? Math.round(resultsForSub.reduce((sum, r) => sum + (r.pct || 0), 0) / resultsForSub.length) : 0;
+          const perSubjectPcts = [];
+          (state.userResults || []).forEach(r => {
+            if (Array.isArray(r.subjectScores)) {
+              const sc = r.subjectScores.find(x => (x.name || '').toLowerCase() === s.name.toLowerCase());
+              if (sc && sc.total > 0) perSubjectPcts.push(Math.round((sc.correct / sc.total) * 100));
+            }
+          });
+          const avg = perSubjectPcts.length ? Math.round(perSubjectPcts.reduce((a, b) => a + b, 0) / perSubjectPcts.length) : 0;
           const iconLetters = s.name.substring(0, 2).toUpperCase();
           const colors = ['var(--primary)', '#8B5CF6', '#10B981', '#F59E0B', '#EF4444'];
           const color = colors[s.name.length % colors.length];
@@ -2803,6 +2928,8 @@ function renderStudentDashboard() {
 window.startDirectSubjectPractice = function(subjectId) {
   state.wizard.selectedSubjects = []; 
   state.wizard.configs = {};
+  state.wizard.mode = 'practice';
+  state.exam.practice.sessionMode = 'practice';
   window.addSubject(subjectId);
   state.wizard.step = 2;
   window.studentNav('practice');
@@ -2823,35 +2950,27 @@ function renderLoginRequired() {
     </div>
   `;
 }
- // ... rest of the function
 /* ===== WIZARD ===== */
-function isSubjectSelected(id) { return state.wizard.selectedSubjects.some(s => s.id === id); }
+function isSubjectSelected(id) {
+  return state.wizard.selectedSubjects.some(s => s.id === id);
+}
+
 window.addSubject = function(id) {
-  if (isSubjectSelected(id)) return;
-function isSubjectSelected(id) { return state.wizard.selectedSubjects.some(s => s.id === id); }
-window.addSubject = function(id) {
-  // 1. Check Mock Mode Limit
+  // Mock Mode: exactly 4 subjects (English + 3 others)
   if (state.wizard.mode === 'mock' && state.wizard.selectedSubjects.length >= 4) {
     window.openModal('Subject Limit Reached',
       `<p>Mock Mode requires exactly <strong>4 subjects</strong> (English + 3 others).</p>
        <p class="mt-3 text-muted text-sm">You have already selected 4 subjects. Please remove one before adding another.</p>`,
-      [{ 
-        label: 'OK', 
-        class: 'btn-primary', 
-        // This forces the app to go back to the Choose Subjects screen (Step 1)
-        action: 'window.closeModal(); window.setWizardStep(1);' 
-      }]);
+      [{ label: 'OK', class: 'btn-primary', action: 'window.closeModal(); window.setWizardStep(1);' }]);
     return;
   }
 
   if (isSubjectSelected(id)) return;
   const subj = state.subjects.find(s => s.id === id);
   if (!subj || subj.questions === 0) return;
-  
-  // 2. Add the subject
+
   state.wizard.selectedSubjects.push({ id: subj.id, name: subj.name });
-  
-  // 3. Set up default config
+
   if (!state.wizard.configs[id]) {
     const defaultQ = Math.min(MAX_QUESTIONS, defaultQuestionCountFor(subj.name));
     let latestYear = 'all';
@@ -2865,33 +2984,23 @@ window.addSubject = function(id) {
       year: latestYear
     };
   }
-  
+
   state.wizard.openConfigId = id;
   renderWizard();
 };
-  state.wizard.selectedSubjects.push({ id: subj.id, name: subj.name });
-  if (!state.wizard.configs[id]) {
-    const defaultQ = Math.min(MAX_QUESTIONS, defaultQuestionCountFor(subj.name));
-    let latestYear = 'all';
-    if (subj.years && subj.years.length > 0) {
-      const sorted = [...subj.years].sort();
-      latestYear = sorted[sorted.length - 1];
-    }
-    state.wizard.configs[id] = {
-      topics: subj.topics ? [...subj.topics] : [],
-      questions: Math.min(defaultQ, subj.questions || defaultQ),
-      year: latestYear
-    };
-  }
-  state.wizard.openConfigId = id;
-  renderWizard();
-};
+
 window.removeSubject = function(id) {
   state.wizard.selectedSubjects = state.wizard.selectedSubjects.filter(s => s.id !== id);
   if (state.wizard.openConfigId === id) state.wizard.openConfigId = null;
   renderWizard();
 };
-window.clearAllSubjects = function() { state.wizard.selectedSubjects = []; state.wizard.openConfigId = null; renderWizard(); };
+
+window.clearAllSubjects = function() {
+  state.wizard.selectedSubjects = [];
+  state.wizard.openConfigId = null;
+  renderWizard();
+};
+
 window.setWizardStep = function(step) {
   if (step >= 1 && step <= 4) {
     state.wizard.step = step;
@@ -2901,36 +3010,68 @@ window.setWizardStep = function(step) {
     renderWizard();
   }
 };
+
 window.nextWizardStep = function() { window.setWizardStep(state.wizard.step + 1); };
 window.prevWizardStep = function() { window.setWizardStep(state.wizard.step - 1); };
+
 window.resetWizard = function() {
-  state.wizard = { step: 1, selectedSubjects: [], configs: {}, timeMode: 'one', questionOrder: 'grouped', globalTime: 40, searchQuery: '', openConfigId: null, shuffleQuestions: true, shuffleOptions: true };
+  state.wizard = {
+    step: 1,
+    selectedSubjects: [],
+    configs: {},
+    timeMode: 'one',
+    questionOrder: 'grouped',
+    globalTime: 40,
+    mode: 'practice',
+    searchQuery: '',
+    openConfigId: null,
+    shuffleQuestions: true,
+    shuffleOptions: true
+  };
   renderWizard();
 };
-window.setWizardSearch = function(q) { state.wizard.searchQuery = q; renderWizard(); };
+
+window.setWizardSearch = function(q) {
+  state.wizard.searchQuery = q;
+  const ql = (q || '').toLowerCase();
+  document.querySelectorAll('#studentContent .subject-tile').forEach(el => {
+    const name = (el.querySelector('.st-name')?.textContent || '').toLowerCase();
+    el.style.display = name.includes(ql) ? '' : 'none';
+  });
+};
+
 window.setTimeMode = function(mode) {
   if (mode !== 'one' && mode !== 'separate') return;
   state.wizard.timeMode = mode;
   renderWizard();
 };
+
 window.setQuestionOrder = function(order) {
   if (order !== 'grouped' && order !== 'mixed') return;
   state.wizard.questionOrder = order;
   renderWizard();
 };
+
 window.toggleShuffleQuestions = function() {
   state.wizard.shuffleQuestions = !state.wizard.shuffleQuestions;
   renderWizard();
 };
+
 window.toggleShuffleOptions = function() {
   state.wizard.shuffleOptions = !state.wizard.shuffleOptions;
   renderWizard();
 };
-window.toggleSubjectConfig = function(id) { state.wizard.openConfigId = state.wizard.openConfigId === id ? null : id; renderWizard(); };
+
+window.toggleSubjectConfig = function(id) {
+  state.wizard.openConfigId = state.wizard.openConfigId === id ? null : id;
+  renderWizard();
+};
+
 window.updateSubjectConfig = function(id, field, value) {
   if (!state.wizard.configs[id]) state.wizard.configs[id] = {};
   state.wizard.configs[id][field] = value;
 };
+
 window.setGlobalTime = function(value) {
   const v = Math.max(1, parseInt(value) || 1);
   state.wizard.globalTime = v;
@@ -2946,6 +3087,7 @@ window.setSubjectYear = function(subjectId, year) {
   if (trigger) trigger.classList.remove('open');
   renderWizard();
 };
+
 window.toggleYearDropdown = function(subjectId) {
   const panel = document.getElementById(`yearPanel-${subjectId}`);
   const trigger = document.querySelector(`#yearDropdown-${subjectId} .year-dropdown-trigger`);
@@ -2955,6 +3097,7 @@ window.toggleYearDropdown = function(subjectId) {
   document.querySelectorAll('.year-dropdown-trigger.open').forEach(t => t.classList.remove('open'));
   if (!isOpen) { panel.classList.add('open'); trigger.classList.add('open'); }
 };
+
 
 function renderWizardRail() {
   const steps = [
@@ -3378,8 +3521,9 @@ window.startPracticeFromWizard = function() {
   exam.flagged = new Set();
   exam.shuffledOptionsMap = {};
   exam.questionLists = {};
-  exam._submitted = false;
+    exam._submitted = false;
   exam._submitting = false;
+  exam.offences = 0;
   let totalQ = 0;
 
   exam.subjects.forEach((subj, sIdx) => {
@@ -3838,15 +3982,21 @@ window.switchPracticeSubject = function(idx) {
 function startExamTimerFor(type) {
   const exam = getExam(type);
   if (exam.timerInterval) return;
-  
+
   if (!exam.initialTime) exam.initialTime = exam.timer;
-  
+
+  // If time already finished, submit immediately
+  if (exam.timer <= 0) {
+    setTimeout(() => { window.autoSubmitFor(type); }, 300);
+    return;
+  }
+
   exam.timerInterval = setInterval(() => {
     if (exam.timer > 0) {
       exam.timer--;
       const el = document.getElementById(`examTimer-${type}`);
       const meter = document.getElementById(`examMeter-${type}`);
-      
+
       if (el) {
         const minutes = String(Math.floor(exam.timer / 60)).padStart(2, '0');
         const seconds = String(exam.timer % 60).padStart(2, '0');
@@ -3855,9 +4005,9 @@ function startExamTimerFor(type) {
         if (exam.timer < 60) el.classList.add('danger');
         else if (exam.timer < 300) el.classList.add('warning');
       }
-      
+
       if (meter) {
-        const pctLeft = (exam.timer / exam.initialTime) * 100;
+        const pctLeft = exam.initialTime > 0 ? (exam.timer / exam.initialTime) * 100 : 100;
         meter.style.width = `${pctLeft}%`;
         meter.style.background = exam.timer < 60 ? 'var(--danger)' : exam.timer < 300 ? 'var(--gold)' : 'var(--primary)';
       }
@@ -3954,10 +4104,12 @@ window.quitExam = function(type, backView) {
   exam.currentQuestion = 1;
   exam.answers = {};
   exam.flagged = new Set();
+exam.initialTime = 0;
   if (type === 'practice') exam.currentSubjectIndex = 0;
   if (type === 'mock') exam.currentSubjectIndex = 0;
-  exam._submitted = false;
+    exam._submitted = false;
   exam._submitting = false;
+  exam.offences = 0;
   window.studentNav(backView);
 };
 
@@ -3966,92 +4118,96 @@ window.submitExamFor = async function(type, forceFail = false) {
   if (exam._submitted) return;
   exam._submitted = true;
   exam._submitting = false;
-  // <-- ADD THIS BLOCK: honour the mode the user selected in the wizard
-  if (type === 'practice' && exam.sessionMode === 'mock') {
-    type = 'mock';
-  }
+  const effectiveType = (type === 'practice' && exam.sessionMode === 'mock') ? 'mock' : type;
   window.closeModal();
   window.deactivateExamProctoring();
 
   if (!state.currentUser || !state.currentUser.uid) {
-    alert('You must be logged in to submit. Please log in again.');
-    exam._submitted = false;
+    alert('You must be logged in to submit. Your answers have been lost.');
     return;
   }
   if (exam.timerInterval) { clearInterval(exam.timerInterval); exam.timerInterval = null; }
-  
+
   const answered = Object.keys(exam.answers).length;
-  
+
   let snapshot = { questionLists: null, questionList: null, subjects: null, multiSubject: false };
-  const mapQuestion = (q) => ({
+  const mapQuestion = (q, originalKey) => ({
     id: q.id || null, text: q.text || '', options: q.options || [], correct: q.correct || 'A',
     explanation: q.explanation || '', image: q.image || null, optionImages: q.optionImages || [],
     explanationImage: q.explanationImage || null, subject: q.subject || '', topic: q.topic || '',
-    section: q.section || '', passage: q.passage || ''
+    section: q.section || '', passage: q.passage || '',
+    _answerKey: originalKey || null
   });
 
-let rawCorrect = 0;
-let rawTotal = 0;
-const subjectScores = [];
+  let rawCorrect = 0;
+  let rawTotal = 0;
+  const subjectScores = [];
 
-// --- Build snapshot + per-subject scores from the ACTUAL exam shape, not 'type' ---
-const isMulti = !!(exam.subjects && exam.subjects.length > 1 && exam.questionLists);
-const isMixedPractice = exam.questionOrder === 'mixed' && Array.isArray(exam.mixedList);
+  const isMulti = !!(exam.subjects && exam.subjects.length > 1 && exam.questionLists);
+  const isMixedPractice = exam.questionOrder === 'mixed' && Array.isArray(exam.mixedList);
 
-if (isMixedPractice) {
-  // Mixed practice: one flat list, single bucket
-  const list = exam.mixedList.map(mapQuestion);
-  snapshot.questionList = list;
-  snapshot.subjects = null;
-  snapshot.questionLists = null;
-  snapshot.multiSubject = false;
-  const s = computeScore(exam.answers, list, { isMulti: false, subjectIndex: 0 });
-  rawCorrect = s.correct; rawTotal = s.total;
-  subjectScores.push({ name: 'Mixed Practice', correct: s.correct, total: s.total, pct: s.pct });
-} else if (isMulti) {
-  // Multi-subject (practice wizard multi, wizard-mock, or mock with subjects)
-  snapshot.questionLists = {};
-  exam.subjects.forEach((s, idx) => {
-    const list = (exam.questionLists[idx] || []).map(mapQuestion);
-    snapshot.questionLists[idx] = list;
-    const sc = computeScore(exam.answers, list, { isMulti: true, subjectIndex: idx });
-    rawCorrect += sc.correct; rawTotal += sc.total;
-    subjectScores.push({ name: s.name, correct: sc.correct, total: sc.total, pct: sc.pct });
-  });
-  snapshot.subjects = exam.subjects.map(s => ({ name: s.name }));
-  snapshot.multiSubject = true;
-} else {
-  // Single subject — works for practice single and mock single
-  const rawList = (exam.questionLists && exam.questionLists[0]) || exam.questionList || [];
-  const list = rawList.map(mapQuestion);
-  snapshot.questionList = list;
-  snapshot.questionLists = null;
-  snapshot.subjects = null;
-  snapshot.multiSubject = false;
-  const name = (exam.subjects && exam.subjects[0] && exam.subjects[0].name)
-    || exam.subject || 'General';
-  const sc = computeScore(exam.answers, list, { isMulti: false, subjectIndex: 0 });
-  rawCorrect = sc.correct; rawTotal = sc.total;
-  subjectScores.push({ name, correct: sc.correct, total: sc.total, pct: sc.pct });
-}
+  if (isMixedPractice) {
+    const list = exam.mixedList.map((q, i) => mapQuestion(q, `q-${i + 1}`));
+    snapshot.questionList = list;
+    snapshot.subjects = null;
+    snapshot.questionLists = null;
+    snapshot.multiSubject = false;
 
-  // --- NEW JAMB SCORING LOGIC ---
-  // JAMB scores are over 400 (Mock) or 100 (Practice)
-  // If forceFail (due to offences), score is 0.
+    const buckets = {};
+    exam.mixedList.forEach((q, i) => {
+      const sIdx = q._subjectIndex != null ? q._subjectIndex : 0;
+      if (!buckets[sIdx]) buckets[sIdx] = [];
+      buckets[sIdx].push({ key: `q-${i + 1}`, q });
+    });
+
+    exam.subjects.forEach((s, idx) => {
+      const bucket = buckets[idx] || [];
+      if (bucket.length === 0) return;
+      const bucketQuestions = bucket.map(b => mapQuestion(b.q, b.key));
+      const sc = computeScore(exam.answers, bucketQuestions, { isMulti: false, subjectIndex: 0 });
+      rawCorrect += sc.correct;
+      rawTotal += sc.total;
+      subjectScores.push({ name: s.name, correct: sc.correct, total: sc.total, pct: sc.pct });
+    });
+  } else if (isMulti) {
+    snapshot.questionLists = {};
+    exam.subjects.forEach((s, idx) => {
+      const list = (exam.questionLists[idx] || []).map((q, i) => mapQuestion(q, `${idx}-${i + 1}`));
+      snapshot.questionLists[idx] = list;
+      const sc = computeScore(exam.answers, list, { isMulti: true, subjectIndex: idx });
+      rawCorrect += sc.correct;
+      rawTotal += sc.total;
+      subjectScores.push({ name: s.name, correct: sc.correct, total: sc.total, pct: sc.pct });
+    });
+    snapshot.subjects = exam.subjects.map(s => ({ name: s.name }));
+    snapshot.multiSubject = true;
+  } else {
+    const rawList = (exam.questionLists && exam.questionLists[0]) || exam.questionList || [];
+    const subjIdx = exam.currentSubjectIndex || 0;
+    const list = rawList.map((q, i) => mapQuestion(q, `${subjIdx}-${i + 1}`));
+    snapshot.questionList = list;
+    snapshot.questionLists = null;
+    snapshot.subjects = null;
+    snapshot.multiSubject = false;
+    const name = (exam.subjects && exam.subjects[0] && exam.subjects[0].name)
+      || exam.subject || 'General';
+    const sc = computeScore(exam.answers, list, { isMulti: false, subjectIndex: 0 });
+    rawCorrect = sc.correct;
+    rawTotal = sc.total;
+    subjectScores.push({ name, correct: sc.correct, total: sc.total, pct: sc.pct });
+  }
+
   let finalScore = 0;
-  let finalTotal = (type === 'mock') ? 400 : 100;
-  let subjectCount = type === 'mock' ? 4 : (exam.subjects ? exam.subjects.length : 1);
-  
-  if (type === 'practice' && !exam.subjects) subjectCount = 1; // Mixed mode practice
+  let finalTotal = (effectiveType === 'mock') ? 400 : 100;
 
   if (!forceFail && rawTotal > 0) {
-    const isMockFour = (type === 'practice' && exam.subjects && exam.subjects.length === 4) || (type === 'mock');
-    if (isMockFour) {
-       finalScore = Math.round((rawCorrect / rawTotal) * 400);
-       finalTotal = 400;
+    const ratio = rawCorrect / rawTotal;
+    if (effectiveType === 'mock') {
+      finalScore = Math.round(ratio * 400);
+      finalTotal = 400;
     } else {
-       finalScore = Math.round((rawCorrect / rawTotal) * 100);
-       finalTotal = 100;
+      finalScore = Math.round(ratio * 100);
+      finalTotal = 100;
     }
   }
 
@@ -4061,27 +4217,31 @@ if (isMixedPractice) {
   const answersPlain = {};
   Object.keys(exam.answers).forEach(k => { answersPlain[k] = exam.answers[k]; });
 
-  const subjectList = type === 'mock' && exam.subjects && exam.subjects.length
+  const subjectList = effectiveType === 'mock' && exam.subjects && exam.subjects.length
     ? exam.subjects.map(s => s.name).join(', ')
-    : (type === 'practice' ? (exam.subjects || []).map(s => s.name).join(', ') : (exam.mockTitle || 'Mock'));
+    : (effectiveType === 'practice' ? (exam.subjects || []).map(s => s.name).join(', ') : (exam.mockTitle || 'Mock'));
 
   const result = {
     uid: state.currentUser.uid,
     studentName: state.userProfile?.name || 'Guest',
     studentClass: state.userProfile?.class || '',
-    type, subject: subjectList,
-    score: `${finalScore}/${finalTotal}`, // e.g. 350/400
-    answered: finalScore, // Store scaled score
+    type: effectiveType,
+    subject: subjectList,
+    score: `${finalScore}/${finalTotal}`,
+    answered: finalScore,
     attempted: answered,
-    total: finalTotal, // Store 400 or 100
+    total: finalTotal,
     pct,
-    subjectScores,          // <-- ADD THIS LINE
+    rawCorrect,
+    rawTotal,
+    subjectScores,
     duration: timeUsed,
     date: new Date().toISOString().slice(0, 10),
     createdAt: Date.now(),
-    snapshot, answers: answersPlain,
+    snapshot,
+    answers: answersPlain,
     flagged: Array.from(exam.flagged),
-    mockId: (type === 'mock' && exam.mockId) ? exam.mockId : null,
+    mockId: (effectiveType === 'mock' && exam.mockId) ? exam.mockId : null,
     offences: exam.offences || 0
   };
 
@@ -4090,9 +4250,11 @@ if (isMixedPractice) {
       const cleanResult = sanitizeForFirebase(result);
       const r = window.__fbPush(window.__fbRef(window.__fbDb, 'results'));
       await window.__fbSet(r, cleanResult);
-      addNotification('Test Submitted', `${type === 'practice' ? 'Practice' : 'Mock'} submitted — ${finalScore}/${finalTotal} (${pct}%)`);
+      addNotification('Test Submitted', `${effectiveType === 'practice' ? 'Practice' : 'Mock'} submitted — ${finalScore}/${finalTotal} (${pct}%)`);
     }
-  } catch (e) { console.error('Result save failed', e); }
+  } catch (e) {
+    console.error('Result save failed', e);
+  }
 
   exam.currentQuestion = 1;
   exam.answers = {};
@@ -4133,7 +4295,7 @@ window.openReview = function(resultId) {
     }
 
     const subject = subjectNames[0] || '';
-    const targetCount = result.total || 0;
+    const targetCount = Number(result.rawTotal) || 40;
 
     let allQs = Object.values(state.allQuestions).map(q => ({ ...q }));
 
@@ -4478,30 +4640,44 @@ function renderResultsDynamic() {
   }
 
   const latest = mine[0];
-  const correct = latest.answered || 0;
+  const hasRaw = latest.rawCorrect != null && latest.rawTotal != null;
+  const correct = hasRaw ? latest.rawCorrect : null;
+  const rawTotalQ = hasRaw ? latest.rawTotal : null;
   const total = latest.total || 0;
   const pct = latest.pct || 0;
-  const incorrect = (latest.attempted || 0) - correct;
-  const unanswered = total - (latest.attempted || 0);
+  const attempted = latest.attempted || 0;
+  const incorrect = hasRaw ? Math.max(0, attempted - correct) : null;
+  const unanswered = hasRaw ? Math.max(0, rawTotalQ - attempted) : null;
 
   grid.innerHTML = `
-    <div class="result-stat"><div class="result-stat-value">${correct}/${total}</div><div class="result-stat-label">Total Score</div></div>
+        <div class="result-stat"><div class="result-stat-value">${latest.answered || 0}/${total}</div><div class="result-stat-label">Total Score</div></div>
     <div class="result-stat"><div class="result-stat-value" style="color:${pct >= 50 ? 'var(--success)' : 'var(--danger)'}">${pct}%</div><div class="result-stat-label">Percentage</div></div>
-    <div class="result-stat"><div class="result-stat-value" style="color:var(--success)">${correct}</div><div class="result-stat-label">Correct</div></div>
-    <div class="result-stat"><div class="result-stat-value" style="color:var(--danger)">${incorrect}</div><div class="result-stat-label">Incorrect</div></div>
-    <div class="result-stat"><div class="result-stat-value" style="color:var(--gold)">${unanswered}</div><div class="result-stat-label">Unanswered</div></div>
+    <div class="result-stat"><div class="result-stat-value" style="color:var(--success)">${correct != null ? correct : '—'}</div><div class="result-stat-label">Correct</div></div>
+    <div class="result-stat"><div class="result-stat-value" style="color:var(--danger)">${incorrect != null ? incorrect : '—'}</div><div class="result-stat-label">Incorrect</div></div>
+    <div class="result-stat"><div class="result-stat-value" style="color:var(--gold)">${unanswered != null ? unanswered : '—'}</div><div class="result-stat-label">Unanswered</div></div>
+<div class="result-stat"><div class="result-stat-value">${latest.attempted || 0}</div><div class="result-stat-label">Attempted</div></div>
     <div class="result-stat"><div class="result-stat-value">${Math.floor((latest.duration || 0)/60)}:${String((latest.duration || 0)%60).padStart(2,'0')}</div><div class="result-stat-label">Time Used</div></div>
   `;
 
-  // Recommendations: lowest 4
+  // Recommendations: lowest 4 (normalise to per-subject % using rawCorrect/rawTotal when available)
   const subjScores = {};
   mine.forEach(r => {
-    if (r.subject && r.pct !== undefined) {
+    if (Array.isArray(r.subjectScores) && r.subjectScores.length > 0) {
+      r.subjectScores.forEach(sc => {
+        const name = (sc.name || '').trim();
+        if (!name || !sc.total) return;
+        const p = Math.round((sc.correct / sc.total) * 100);
+        if (!subjScores[name]) subjScores[name] = { total: 0, count: 0 };
+        subjScores[name].total += p;
+        subjScores[name].count++;
+      });
+    } else if (r.subject && r.rawCorrect != null && r.rawTotal > 0) {
+      const p = Math.round((r.rawCorrect / r.rawTotal) * 100);
       r.subject.split(',').forEach(s => {
         const name = s.trim();
         if (!name) return;
         if (!subjScores[name]) subjScores[name] = { total: 0, count: 0 };
-        subjScores[name].total += r.pct;
+        subjScores[name].total += p;
         subjScores[name].count++;
       });
     }
@@ -4575,31 +4751,41 @@ function renderResultsDynamic() {
 window.startRecommendedPractice = function() {
   const mine = state.userResults || [];
   const subjScores = {};
-  
-  // Calculate averages
+
   mine.forEach(r => {
-    if (r.subject && r.pct !== undefined) {
+    if (Array.isArray(r.subjectScores) && r.subjectScores.length > 0) {
+      r.subjectScores.forEach(sc => {
+        const name = (sc.name || '').trim();
+        if (!name || !sc.total) return;
+        const key = name.toLowerCase();
+        const p = Math.round((sc.correct / sc.total) * 100);
+        if (!subjScores[key]) subjScores[key] = { total: 0, count: 0, displayName: name };
+        subjScores[key].total += p;
+        subjScores[key].count++;
+      });
+    } else if (r.subject && r.rawCorrect != null && r.rawTotal > 0) {
+      const p = Math.round((r.rawCorrect / r.rawTotal) * 100);
       r.subject.split(',').forEach(s => {
-        const name = s.trim().toLowerCase();
-        if (!subjScores[name]) subjScores[name] = { total: 0, count: 0, displayName: s.trim() };
-        subjScores[name].total += r.pct;
-        subjScores[name].count++;
+        const name = s.trim();
+        if (!name) return;
+        const key = name.toLowerCase();
+        if (!subjScores[key]) subjScores[key] = { total: 0, count: 0, displayName: name };
+        subjScores[key].total += p;
+        subjScores[key].count++;
       });
     }
   });
 
-  // Get the lowest 3 subjects
   const lowestList = Object.entries(subjScores)
-    .map(([key, data]) => ({ key, name: data.displayName, avg: data.total/data.count }))
-    .sort((a,b) => a.avg - b.avg)
+    .map(([key, data]) => ({ key, name: data.displayName, avg: data.total / data.count }))
+    .sort((a, b) => a.avg - b.avg)
     .slice(0, 4);
 
-  state.wizard.selectedSubjects = []; 
+  state.wizard.selectedSubjects = [];
   state.wizard.configs = {};
-  
+
   let foundAny = false;
   lowestList.forEach(item => {
-    // Exact match check
     const subj = state.subjects.find(s => s.name.toLowerCase() === item.key);
     if (subj && !state.wizard.selectedSubjects.some(x => x.id === subj.id)) {
       window.addSubject(subj.id);
@@ -4607,16 +4793,19 @@ window.startRecommendedPractice = function() {
     }
   });
 
-  if (foundAny) {
-    state.wizard.step = 2;
-    window.studentNav('practice');
-  } else {
-    window.studentNav('practice');
+  if (!foundAny) {
+    window.openModal('No Weak Subjects Yet',
+      `<p>We don't have enough data to recommend subjects yet. Take a few more practice tests first.</p>`,
+      [{ label: 'OK', class: 'btn-primary', action: 'window.closeModal()' }]);
+    return;
   }
+  state.wizard.step = 2;
+  window.studentNav('practice');
 };
 
 function renderStudentProfile() {
   if (!state.currentUser || !state.userProfile) return renderLoginRequired();
+  const p = state.userProfile;
   return `
     <div class="fade-in">
       <div class="section-header">
@@ -4625,20 +4814,24 @@ function renderStudentProfile() {
       </div>
       <div class="card"><div class="card-body">
         <div class="flex items-center gap-4 mb-6 flex-wrap">
-          <div class="avatar avatar-lg">${state.userProfile.initials}</div>
-          <div><h3>${state.userProfile.name}</h3><p class="text-muted">${state.userProfile.class}</p></div>
+          <div class="avatar avatar-lg">${escapeAttr(p.initials)}</div>
+          <div>
+            <h3>${escapeAttr(p.name)}</h3>
+            <p class="text-muted">${escapeAttr(p.class)}</p>
+          </div>
         </div>
         <div class="grid grid-2 gap-4">
-          <div class="form-group"><label class="form-label">Student ID</label><input class="form-input" value="${state.userProfile.id}" readonly></div>
-          <div class="form-group"><label class="form-label">Email</label><input class="form-input" value="${state.userProfile.email}" readonly></div>
-          <div class="form-group"><label class="form-label">Class</label><input class="form-input" value="${state.userProfile.class}" readonly></div>
-          <div class="form-group"><label class="form-label">Name</label><input class="form-input" value="${state.userProfile.name}" readonly></div>
+          <div class="form-group"><label class="form-label">Student ID</label><input class="form-input" value="${escapeAttr(p.id)}" readonly></div>
+          <div class="form-group"><label class="form-label">Email</label><input class="form-input" value="${escapeAttr(p.email)}" readonly></div>
+          <div class="form-group"><label class="form-label">Class</label><input class="form-input" value="${escapeAttr(p.class)}" readonly></div>
+          <div class="form-group"><label class="form-label">Name</label><input class="form-input" value="${escapeAttr(p.name)}" readonly></div>
         </div>
-                <div class="flex gap-3 mt-8 flex-wrap" style="margin-top: 32px;">
+        <div class="flex gap-3 mt-8 flex-wrap" style="margin-top: 32px;">
           <button class="btn btn-primary" onclick="window.openEditProfileModal()">Edit Profile</button>
           <button class="btn btn-secondary" onclick="window.openForgotPassword()">Reset Password</button>
-           
         </div>
+      </div></div>
+    </div>
   `;
 }
 
@@ -4647,11 +4840,11 @@ window.openEditProfileModal = function() {
   window.openModal('Edit Profile',
     `<div class="form-group mb-3">
       <label class="form-label">Full Name</label>
-      <input type="text" id="editProfileName" class="form-input" value="${esc(state.userProfile.name)}">
+            <input type="text" id="editProfileName" class="form-input" value="${escapeAttr(state.userProfile.name)}">
     </div>
     <div class="form-group mb-3">
       <label class="form-label">Class</label>
-      <input type="text" id="editProfileClass" class="form-input" value="${esc(state.userProfile.class)}">
+           <input type="text" id="editProfileClass" class="form-input" value="${escapeAttr(state.userProfile.class)}">
     </div>`,
     [
       { label: 'Cancel', class: 'btn-secondary', action: 'window.closeModal()' },
@@ -4691,15 +4884,22 @@ window.saveProfileChanges = async function() {
 };
 
 function renderStudentProgress() {
-  const practicedSubjects = new Set();
-  state.userResults.forEach(r => {
-    if (r.subject) {
-      r.subject.split(',').forEach(s => practicedSubjects.add(s.trim()));
-    }
+  const allSubjects = state.subjects.filter(s => s.questions > 0);
+
+  // For each subject, compute per-subject pct list from actual per-subject data
+  const subjectData = {};
+  allSubjects.forEach(s => {
+    const pcts = [];
+    (state.userResults || []).forEach(r => {
+      if (Array.isArray(r.subjectScores)) {
+        const sc = r.subjectScores.find(x => (x.name || '').toLowerCase() === s.name.toLowerCase());
+        if (sc && sc.total > 0) pcts.push(Math.round((sc.correct / sc.total) * 100));
+      }
+    });
+    subjectData[s.id] = pcts;
   });
 
-  const allSubjects = state.subjects.filter(s => s.questions > 0);
-  const practicedList = allSubjects.filter(s => practicedSubjects.has(s.name));
+  const practicedList = allSubjects.filter(s => subjectData[s.id].length > 0);
 
   return `
     <div class="fade-in">
@@ -4733,10 +4933,10 @@ function renderStudentProgress() {
         : `<div class="card"><div class="card-body">
             <h4 class="card-title mb-4">Subject Details</h4>
             ${practicedList.map(s => {
-              const attempts = state.userResults.filter(r => (r.subject || '').includes(s.name));
-              const testsCount = attempts.length;
-              const avgPct = testsCount ? Math.round(attempts.reduce((sum, r) => sum + (r.pct || 0), 0) / testsCount) : 0;
-              const bestPct = testsCount ? Math.max(...attempts.map(r => r.pct || 0)) : 0;
+              const pcts = subjectData[s.id];
+              const testsCount = pcts.length;
+              const avgPct = testsCount ? Math.round(pcts.reduce((a, b) => a + b, 0) / testsCount) : 0;
+              const bestPct = testsCount ? Math.max(...pcts) : 0;
               return `
                 <div class="mb-5" style="padding-bottom:var(--space-4);border-bottom:1px solid var(--border);">
                   <div class="flex justify-between items-center mb-2 flex-wrap gap-2">
@@ -4801,9 +5001,11 @@ function renderStudentMock() {
   const availableMocks = mocks.filter(m => {
     if (doneMockIds.has(m.id)) return false;
     if (m.end && m.end !== '—') {
-      const endTime = new Date(m.end).getTime();
-      const endOfDay = endTime + 24 * 60 * 60 * 1000 - 1;
-      if (now > endOfDay) return false;
+      const endDate = new Date(m.end);
+      if (!isNaN(endDate.getTime())) {
+        endDate.setHours(23, 59, 59, 999);
+        if (now > endDate.getTime()) return false;
+      }
     }
     return true;
   });
@@ -4823,7 +5025,7 @@ function renderStudentMock() {
   }
 
   if (availableMocks.length === 0) {
-    const allDone = mocks.length > 0;
+    const allDone = mocks.length > 0 && mocks.every(m => doneMockIds.has(m.id));
     return `
       <div class="fade-in">
         <div class="section-header">
@@ -4941,9 +5143,10 @@ window.beginMockExam = function() {
   exam.subject = mock.subject || 'General';
   exam.subjects = isMulti ? finalSubjects : null;
   exam.multiSubject = isMulti;
-  exam.currentSubjectIndex = 0;
+    exam.currentSubjectIndex = 0;
   exam._submitted = false;
   exam._submitting = false;
+  exam.offences = 0;
 
   if (isMulti) {
     exam.questionLists = finalLists;
@@ -5010,7 +5213,7 @@ function renderMockInstructions() {
     <h4 class="card-title mb-3">Mock Examination Information</h4>
     <div class="grid grid-2 gap-4 text-sm">
       <div><span class="text-muted">Subjects:</span> <strong>${esc(subjectText)}</strong></div>
-      <div><span class="text-muted">Questions:</span> <strong>${mock.questions || 0} (40 per subject)</strong></div>
+      <div><span class="text-muted">Questions:</span> <strong>${mock.questions || 0}${subjectList.length > 0 ? ` (${Math.round((mock.questions || 0) / subjectList.length)} per subject)` : ''}</strong></div>
       <div><span class="text-muted">Duration:</span> <strong>${mock.duration || '2 hours'}</strong></div>
       <div><span class="text-muted">Date:</span> <strong>${new Date().toLocaleDateString('en-GB')}</strong></div>
     </div>
@@ -5062,11 +5265,38 @@ function esc(s) {
   return clean;
 }
 
+function escapeAttr(s) {
+  return String(s == null ? '' : s)
+    .replace(/&/g, '&amp;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;');
+}
+
+
 window.openModal = function(title, body, buttons = []) {
   document.getElementById('modalTitle').textContent = title;
   document.getElementById('modalBody').innerHTML = body;
   const footer = document.getElementById('modalFooter');
-  footer.innerHTML = buttons.map(b => `<button class="btn ${b.class}" onclick="${b.action}">${b.label}</button>`).join('');
+  footer.innerHTML = '';
+  buttons.forEach(b => {
+    const btn = document.createElement('button');
+    btn.className = 'btn ' + b.class;
+    btn.textContent = b.label;
+    btn.addEventListener('click', () => {
+      try {
+        if (typeof b.action === 'function') {
+          b.action();
+        } else if (typeof b.action === 'string') {
+          new Function(b.action)();
+        }
+      } catch (e) {
+        console.error('Modal action failed:', e);
+      }
+    });
+    footer.appendChild(btn);
+  });
   document.getElementById('modal').classList.add('open');
 };
 window.closeModal = function() { document.getElementById('modal').classList.remove('open'); };
@@ -5086,10 +5316,12 @@ function loadQuestions() {
         const val = q['option_' + letter];
         if (val && String(val).trim()) {
           opts.push(letter.toUpperCase() + ') ' + String(val).trim());
-          optImgs.push((q.option_images && q.option_images[i]) || null);
+          const img = q.option_images
+            ? (q.option_images[letter] || q.option_images[i] || null)
+            : null;
+          optImgs.push(img);
         }
       });
-
       let subjectName = q.subject || 'General';
       let sectionText = q.section || q.instruction || '';
       let questionText = q.question || '';
@@ -5163,20 +5395,26 @@ function loadStudentResults() {
       .map(([id, r]) => ({ id, ...r }))
       .filter(r => r.uid === state.currentUser?.uid)
       .sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
-    console.log('[Results] Updated:', state.userResults.length, 'for uid', state.currentUser?.uid);
-    if (state.studentView === 'results') renderResultsDynamic();
-    if (state.studentView === 'mock') {
-      document.getElementById('studentContent').innerHTML = renderStudentMock();
-    }
+
+    // Debounce re-renders to avoid hammering the DOM
+    clearTimeout(window.__resultsRenderTimer);
+    window.__resultsRenderTimer = setTimeout(() => {
+      if (state.studentView === 'results') renderResultsDynamic();
+      if (state.studentView === 'mock') {
+        const c = document.getElementById('studentContent');
+        if (c) c.innerHTML = renderStudentMock();
+      }
+    }, 200);
   });
   window.__resultsUnsub = unsub;
-}
+} 
 
 function bootApp() {
   console.log('[Boot] Starting...');
+  window.__isLoggedIn = () => !!(state && state.currentUser);
   document.getElementById('studentApp').style.display = 'flex';
   updateAuthUI();
-  window.studentNav('dashboard');
+  document.getElementById('studentContent').innerHTML = '<div class="fade-in"><div class="empty-hint">Loading…</div></div>';
 
   function initFirebase() {
     if (!window.__fbOnAuthStateChanged) {
@@ -5218,6 +5456,7 @@ function bootApp() {
         closeAllAuthPages();
         loadStudentResults();
         addNotification('Welcome back!', `Logged in as ${state.userProfile.name}.`);
+        window.studentNav('dashboard');
       } else {
         state.currentUser = null;
         state.userProfile = null;
@@ -5228,6 +5467,7 @@ function bootApp() {
           window.__resultsUnsub = null;
         }
         updateAuthUI();
+        window.studentNav('dashboard');
       }
     });
   }
@@ -5252,7 +5492,6 @@ function bootApp() {
       dotEl.style.background = 'var(--danger)';
       textEl.textContent = 'Offline';
       
-      // Optional: If offline during an exam, you can trigger a warning here
       if (document.body.classList.contains('exam-mode')) {
         addNotification('Connection Lost', 'Your internet connection has been lost. Please reconnect immediately to avoid losing progress.');
       }
@@ -5261,9 +5500,9 @@ function bootApp() {
 
   window.addEventListener('online', updateNetworkStatus);
   window.addEventListener('offline', updateNetworkStatus);
-  updateNetworkStatus(); // Run once on startup
-  
+  updateNetworkStatus();
 }
+
 
 if (document.readyState === 'loading') {
   document.addEventListener('DOMContentLoaded', bootApp);
@@ -5274,14 +5513,15 @@ if (document.readyState === 'loading') {
 
 <!-- JANITOR SCRIPT TO HIDE ERRORS -->
 <script>
-  setInterval(() => {
-    document.querySelectorAll('merror, .merror, mjx-merror, [data-mjx-error]').forEach(e => {
+    setInterval(() => {
+    if (!document.body.classList.contains('exam-mode') && state.studentView !== 'review') return;
+    document.querySelectorAll('#studentContent merror, #studentContent .merror, #studentContent mjx-merror, #studentContent [data-mjx-error]').forEach(e => {
       e.style.display = 'none';
       e.innerHTML = '';
     });
-  }, 300);
+  }, 1000);
 
-  document.addEventListener('keydown', function(e) {
+document.addEventListener('keydown', function(e) {
   // If the submission modal is open, pressing 'S' or Enter confirms submission
   if (document.getElementById('modal').classList.contains('open')) {
     if (e.key.toLowerCase() === 's' || e.key === 'Enter') {
@@ -5298,6 +5538,9 @@ if (document.readyState === 'loading') {
 
   const key = e.key.toLowerCase();
   if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+
+  // NEW LINE: ignore Ctrl+S / Cmd+S so it doesn't submit by mistake
+  if (e.ctrlKey || e.metaKey) return;
 
   if (key === 'n' || e.key === 'ArrowRight') {
     e.preventDefault();
