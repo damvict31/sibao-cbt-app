@@ -1324,23 +1324,7 @@
 
     body.splash-locked { overflow: hidden !important; height: 100vh; }
 
-    /* Responsive */
-    @media (max-width: 900px) {
-      .promo-stage {
-        grid-template-columns: 1fr;
-        grid-template-rows: auto 1fr;
-        overflow-y: auto;
-      }
-      .promo-left {
-        border-right: none;
-        border-bottom: 2px solid #C6A100;
-        min-height: 45vh;
-        padding: 30px 20px;
-      }
-      .promo-right { padding: 30px 20px 40px; }
-      .promo-buttons { flex-direction: column; width: 100%; gap: 12px; }
-      .promo-btn { width: 100%; }
-    }
+             
 
     /* Reduced motion */
     @media (prefers-reduced-motion: reduce) {
@@ -1419,8 +1403,308 @@
       opacity: 0.6; /* Reduced opacity */
     }
     @media (max-width: 768px) {
-      .banner-logo-carousel { width: 80px; height: 80px; right: 20px; }
+      .banner-logo-carousel { 
+        width: 70px; 
+        height: 70px; 
+        right: 12px; 
+        top: 16px; 
+        transform: none; /* removes the translateY(-50%) on mobile */
+      }
+      .jamb-banner {
+        padding: var(--space-5) 90px var(--space-5) var(--space-4) !important;
+        min-height: 150px;
+      }
+      .jamb-banner h2 { 
+        font-size: 1.1rem !important; 
+        margin-left: 0 !important; 
+        margin-bottom: 8px !important;
+        line-height: 1.25;
+      }
+      .jamb-banner p { 
+        font-size: 0.8rem !important; 
+        margin-left: 0 !important; 
+        line-height: 1.5;
+      }
     }
+ 
+ 
+/* ---------- AUTH PAGES on mobile ---------- */
+@media (max-width: 900px) {
+  .auth-page { height: 100vh; height: 100dvh; overflow-y: auto !important; -webkit-overflow-scrolling: touch; }
+  .auth-left { display: none !important; }
+  .auth-right { overflow: visible; padding: 40px 20px 60px; min-height: 100vh; justify-content: flex-start; }
+  .auth-card-logo { height: 70px; max-width: 90px; margin-bottom: 12px; }
+  .auth-field input, .modern-select { font-size: 16px !important; }
+  .auth-forgot a, .auth-switch-link a { display: inline-block; padding: 8px 4px; margin: -8px -4px; }
+  .auth-error:empty { min-height: 0; margin-bottom: 8px; }
+}
+
+/* ---------- HEADER on small phones ---------- */
+@media (max-width: 480px) {
+  #netStatus span { display: none; }
+  #netStatus { padding: 6px; border-radius: 50%; }
+  #signUpBtn, #loginBtn { display: none !important; }
+  .header-greeting { font-size: 13px !important; }
+}
+
+ 
+
+/* ---------- RESULTS TABLE horizontal scroll ---------- */
+.mobile-table-wrapper { overflow-x: auto; -webkit-overflow-scrolling: touch; width: 100%; border-radius: var(--radius-md); }
+.mobile-table-wrapper table { min-width: 650px; }
+
+    /* ---------- EXAM PALETTE ---------- */
+    .mobile-palette-btn { display: none; }
+
+    /* --- DESKTOP (Screens wider than 768px) --- */
+    @media (min-width: 769px) {
+      .exam-layout {
+        display: grid !important;
+        grid-template-columns: 1fr 320px !important;
+        gap: var(--space-5) !important;
+        align-items: start !important;
+      }
+      .palette {
+        position: -webkit-sticky !important;
+        position: sticky !important;
+        top: calc(var(--header-height) + var(--space-6)) !important;
+        bottom: auto !important;
+        left: auto !important;
+        right: auto !important;
+        margin: 0 !important;
+        border-radius: var(--radius-md) !important;
+        z-index: 1 !important;
+        box-shadow: var(--shadow-sm) !important;
+        max-height: none !important;
+        overflow-y: visible !important;
+        transform: none !important;
+      }
+      .mobile-palette-overlay {
+        display: none !important;
+      }
+    }
+
+    /* --- MOBILE (Screens 768px and smaller) --- */
+    @media (max-width: 768px) {
+      .exam-layout {
+        display: flex !important;
+        flex-direction: column !important;
+      }
+      .palette {
+        position: fixed !important;
+        bottom: -100% !important;
+        left: 0 !important; 
+        right: 0 !important; 
+        top: auto !important;
+        z-index: 9999 !important;
+        border-radius: 20px 20px 0 0 !important;
+        max-height: 70vh !important;
+        overflow-y: auto !important;
+        transition: bottom 0.3s ease-in-out !important;
+        box-shadow: 0 -10px 25px rgba(0,0,0,0.2) !important;
+        margin: 0 !important;
+      }
+      .palette.mobile-open { 
+        bottom: 0 !important; 
+      }
+      .mobile-palette-overlay { 
+        display: none; 
+        position: fixed; 
+        inset: 0; 
+        background: rgba(0,0,0,0.5); 
+        z-index: 9998; 
+      }
+      .mobile-palette-overlay.active { 
+        display: block; 
+      }
+      .mobile-palette-btn {
+        display: inline-flex !important; 
+        align-items: center; 
+        justify-content: center; 
+        gap: 8px;
+        background: var(--primary); 
+        color: white; 
+        padding: 10px 18px;
+        border-radius: var(--radius); 
+        box-shadow: var(--shadow-sm);
+        font-weight: 600; 
+        font-size: var(--text-sm); 
+        border: none; 
+        cursor: pointer;
+      }
+      .mobile-palette-btn:active { 
+        background: var(--primary-hover); 
+      }
+    }
+   
+/* 1. FIX THE AUTH PAGES (Login/Signup) */
+@media (max-width: 900px) {
+  .auth-page {
+    height: 100vh;
+    height: 100dvh;
+    overflow-y: auto !important;
+    -webkit-overflow-scrolling: touch;
+  }
+  .auth-left { display: none !important; }
+  .auth-right {
+    overflow: visible;
+    padding: 40px 20px 60px;
+    min-height: 100vh;
+    justify-content: flex-start;
+  }
+  .auth-card-logo { height: 70px; max-width: 90px; margin-bottom: 12px; }
+  .auth-field input, .modern-select { font-size: 16px !important; }
+  .auth-forgot a, .auth-switch-link a {
+    display: inline-block; padding: 8px 4px; margin: -8px -4px;
+  }
+  .auth-error:empty { min-height: 0; margin-bottom: 8px; }
+}
+
+/* 2. FIX THE MOBILE HEADER */
+@media (max-width: 480px) {
+  #netStatus span { display: none; } 
+  #netStatus { padding: 6px; border-radius: 50%; }
+  #signUpBtn, #loginBtn { display: none !important; } 
+  .header-greeting { font-size: 13px !important; }
+}
+
+ /* ---------- SPLASH SCREEN on mobile — FINAL & ONLY VERSION ---------- */
+@media (max-width: 900px) {
+  .promo-stage {
+    grid-template-columns: 1fr;
+    grid-template-rows: 1fr;
+    overflow-y: auto;
+    overflow-x: hidden;
+    align-items: flex-start;
+  }
+
+  .promo-left {
+    display: none !important;
+  }
+
+  .promo-right {
+    padding: 24px 20px 40px !important;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-start !important;
+    align-items: center;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .promo-right-inner {
+    align-items: center;
+    text-align: center;
+    padding: 0;
+    margin: 0 auto !important;
+    width: 100%;
+    max-width: 500px;
+    flex-shrink: 0;
+  }
+
+  .promo-top-logo {
+    justify-content: center;
+    flex-direction: column;
+    gap: 8px;
+    margin-top: 20px !important;
+    margin-bottom: 24px;
+  }
+
+  .promo-top-logo img {
+    height: 56px !important;
+    width: auto;
+    object-fit: contain;
+    margin: 0 auto;
+  }
+
+  .promo-top-logo-text {
+    align-items: center;
+    font-size: 10px;
+  }
+
+  .promo-quote-section {
+    width: 100%;
+    margin: 16px 0 24px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+
+  .promo-message-box {
+    min-height: 130px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    position: relative;
+  }
+
+  .promo-message .pm-text {
+    font-size: 1.05rem;
+    line-height: 1.6;
+  }
+
+  .quote-mark-top,
+  .quote-mark-bottom {
+    text-align: center;
+    margin: 0;
+    font-size: 3rem;
+    line-height: 0.8;
+  }
+
+  .promo-jamb-logo {
+    margin: 20px auto;
+    height: 50px;
+    width: auto;
+    object-fit: contain;
+  }
+
+  .promo-buttons {
+    flex-direction: column;
+    width: 100%;
+    gap: 12px;
+    margin-top: 8px;
+  }
+
+  .promo-btn {
+    width: 100%;
+  }
+
+  .promo-btn-dashboard {
+    margin-left: 0;
+  }
+}
+
+/* 4. FIX RESULTS TABLE OVERFLOW */
+.mobile-table-wrapper { overflow-x: auto; -webkit-overflow-scrolling: touch; width: 100%; border-radius: var(--radius-md); }
+.mobile-table-wrapper table { min-width: 650px; }
+
+/* 5. MOBILE EXAM PALETTE (Bottom Sheet & Floating Button) */
+.mobile-palette-btn { display: none; }
+
+@media (max-width: 768px) {
+  .palette {
+    position: fixed !important;
+    bottom: -100%; left: 0; right: 0; top: auto !important;
+    z-index: 9999; border-radius: 20px 20px 0 0;
+    max-height: 70vh; overflow-y: auto;
+    transition: bottom 0.3s ease-in-out;
+    box-shadow: 0 -10px 25px rgba(0,0,0,0.2);
+    margin: 0;
+  }
+  .palette.mobile-open { bottom: 0; }
+  .mobile-palette-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 9998; }
+  .mobile-palette-overlay.active { display: block; }
+  .mobile-palette-btn {
+    display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+    background: var(--primary); color: white; padding: 10px 18px;
+    border-radius: var(--radius); box-shadow: var(--shadow-sm);
+    font-weight: 600; font-size: var(--text-sm); border: none; cursor: pointer;
+  }
+  .mobile-palette-btn:active { background: var(--primary-hover); }
+}
+
   </style>
 </head>
 <body class="splash-locked">
@@ -1763,7 +2047,7 @@
         </div>
         <button class="header-icon-btn" id="notifBtn" onclick="window.toggleNotifications(event)" aria-label="Notifications">
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
-          <span class="notification-dot" id="notifDot"></span>
+          <span class="notification-dot" id="notifDot" style="display:none;" role="status" aria-label="Unread notifications"></span>
         </button>
         <div class="header-profile" onclick="window.studentNav('profile')">
           <div class="avatar" id="headerAvatar">?</div>
@@ -2260,7 +2544,7 @@ const state = {
     rebuilt: false
   },
   exam: {
-    practice: { subjects: [], currentSubjectIndex: 0, currentQuestion: 1, totalQuestions: 0, timer: 0, answers: {}, flagged: new Set(), timerInterval: null, questionLists: {}, mixedList: null, timeMode: 'one', questionOrder: 'grouped', shuffleQuestions: false, shuffleOptions: false, shuffledOptionsMap: {}, subjectTimers: null, _submitted: false, _submitting: false },
+    practice: { subjects: [], currentSubjectIndex: 0, currentQuestion: 1, totalQuestions: 0, timer: 0, answers: {}, flagged: new Set(), timerInterval: null, questionLists: {}, mixedList: null, timeMode: 'one', questionOrder: 'grouped', shuffleQuestions: false, shuffleOptions: false, shuffledOptionsMap: {}, subjectTimers: null, sessionMode: 'practice', _submitted: false, _submitting: false },
     mock: { mockId: null, subject: null, subjects: [], currentSubjectIndex: 0, currentQuestion: 1, totalQuestions: 40, timer: 120 * 60, answers: {}, flagged: new Set(), timerInterval: null, questionList: [], questionLists: {}, pendingMockId: null, mockInstructions: '', mockTitle: '', multiSubject: false, subjectTimers: null, timeMode: 'one', _submitted: false, _submitting: false }
   },
   wizard: {
@@ -2401,7 +2685,8 @@ function rebuildSubjectsFromQuestions() {
     years: Array.from(s.years).sort()
   })).filter(s => s.name);
 
-    console.log('[Subjects] Built from questions:', state.subjects.map(s => `${s.name} (${s.questions})`));
+    state.dataLoaded.subjects = true;
+console.log('[Subjects] Built from questions:', state.subjects.map(s => `${s.name} (${s.questions})`));
   // Refresh whichever view is currently visible so it picks up the new subjects
   if (state.studentView === 'practice') {
     renderWizard();
@@ -2481,10 +2766,12 @@ window.handleLogin = async function(e) {
   try {
     await window.__fbSignIn(window.__fbAuth, email, password);
   } catch (err) {
-    errEl.textContent = prettyAuthError(err.code);
-    btn.disabled = false;
-    btn.innerHTML = 'LOGIN';
-  }
+  errEl.textContent = prettyAuthError(err.code);
+  document.getElementById('loginPassword').value = '';
+  document.getElementById('loginPassword').focus();
+  btn.disabled = false;
+  btn.innerHTML = 'LOGIN';
+}
   return false;
 };
 
@@ -2496,7 +2783,7 @@ window.handleSignUp = async function(e) {
   const cls = document.getElementById('signupClass').value;
   const pwd = document.getElementById('signupPassword').value;
   const confirm = document.getElementById('signupConfirm').value;
-  const err = document.getElementById('signupError');       // ✅ correct name
+  const err = document.getElementById('signupError');       // ? correct name
   const btn = document.getElementById('signupSubmitBtn');
 
   err.textContent = '';
@@ -2621,9 +2908,45 @@ window.handleForgotPassword = async function(e) {
 };
 
 window.handleLogout = async function() {
+  clearAllTimers();
+  window.deactivateExamProctoring();
+
   try {
     if (window.__fbSignOut) await window.__fbSignOut(window.__fbAuth);
   } catch (e) { console.error(e); }
+
+  // Clear previous user's data
+  state.userResults = [];
+  state.notifications = [];
+  state.review = {
+    result: null, answers: {}, currentIndex: 0,
+    subjects: null, questionLists: null, questionList: null,
+    isMulti: false, currentSubjectIndex: 0, rebuilt: false
+  };
+  state.wizard = {
+    step: 1, selectedSubjects: [], configs: {}, timeMode: 'one',
+    questionOrder: 'grouped', globalTime: 40, mode: 'practice',
+    searchQuery: '', openConfigId: null,
+    shuffleQuestions: true, shuffleOptions: true
+  };
+  state.exam.practice = {
+    subjects: [], currentSubjectIndex: 0, currentQuestion: 1, totalQuestions: 0,
+    timer: 0, answers: {}, flagged: new Set(), timerInterval: null,
+    questionLists: {}, mixedList: null, timeMode: 'one', questionOrder: 'grouped',
+    shuffleQuestions: false, shuffleOptions: false, shuffledOptionsMap: {},
+    subjectTimers: null, sessionMode: 'practice', _submitted: false, _submitting: false
+  };
+  state.exam.mock = {
+    mockId: null, subject: null, subjects: [], currentSubjectIndex: 0,
+    currentQuestion: 1, totalQuestions: 40, timer: 120 * 60, answers: {},
+    flagged: new Set(), timerInterval: null, questionList: [], questionLists: {},
+    pendingMockId: null, mockInstructions: '', mockTitle: '', multiSubject: false,
+    subjectTimers: null, timeMode: 'one', _submitted: false, _submitting: false
+  };
+
+  document.body.classList.remove('exam-mode');
+  updateAuthUI();
+  window.studentNav('dashboard');
 };
 
 window.handleSidebarAuth = function() {
@@ -2783,6 +3106,43 @@ window.goBack = function() {
   } else window.studentNav('dashboard');
 };
 
+
+ 
+window.openMobilePalette = function() {
+  const palette = document.getElementById('examPalette');
+  const overlay = document.getElementById('paletteOverlay');
+  if (palette) palette.classList.add('mobile-open');
+  if (overlay) overlay.classList.add('active');
+};
+
+window.closeMobilePalette = function() {
+  const palette = document.getElementById('examPalette');
+  const overlay = document.getElementById('paletteOverlay');
+  if (palette) palette.classList.remove('mobile-open');
+  if (overlay) overlay.classList.remove('active');
+};
+
+// Automatically close the palette when a question is selected
+window.gotoMockQuestion = function(n) {
+  window.closeMobilePalette(); // <-- Add this
+  const exam = getExam('mock');
+  const isMulti = exam.subjects && exam.subjects.length > 1;
+  const total = isMulti ? ((exam.questionLists[exam.currentSubjectIndex] || []).length) : (exam.questionList || []).length;
+  if (n < 1 || n > total) return;
+  exam.currentQuestion = n;
+  document.getElementById('studentContent').innerHTML = renderExamRoom('mock');
+};
+
+window.gotoPracticeQuestion = function(n) {
+  window.closeMobilePalette(); // <-- Add this
+  const exam = getExam('practice');
+  const mixedMode = exam.questionOrder === 'mixed';
+  const total = mixedMode ? exam.mixedList.length : (exam.questionLists[exam.currentSubjectIndex] || []).length;
+  if (n < 1 || n > total) return;
+  exam.currentQuestion = n;
+  document.getElementById('studentContent').innerHTML = renderExamRoom('practice');
+};
+
 /* ===== NOTIFICATIONS ===== */
 window.toggleNotifications = function(e) {
   if (e) e.stopPropagation();
@@ -2926,9 +3286,11 @@ function renderStudentDashboard() {
 }
 
 window.startDirectSubjectPractice = function(subjectId) {
+  state.wizard.step = 1;
   state.wizard.selectedSubjects = []; 
   state.wizard.configs = {};
   state.wizard.mode = 'practice';
+  state.wizard.globalTime = state.wizard.globalTime || 40;
   state.exam.practice.sessionMode = 'practice';
   window.addSubject(subjectId);
   state.wizard.step = 2;
@@ -3688,6 +4050,10 @@ function renderMockExamRoom(exam) {
         </div>
       </div>
       ${tabsHTML ? `<div class="subject-tabs">${tabsHTML}</div>` : ''}
+      
+      <!-- OVERLAY MOVED OUTSIDE THE GRID -->
+      <div class="mobile-palette-overlay" id="paletteOverlay" onclick="window.closeMobilePalette()"></div>
+
       <div class="exam-layout">
         <div>
           <div class="question-card">
@@ -3696,12 +4062,12 @@ function renderMockExamRoom(exam) {
             ${(q.passage && q.passage !== q.section) ? `<div style="background:var(--bg); border-left:4px solid var(--primary); padding:16px; border-radius:8px; margin-bottom:20px; font-size:15px; line-height:1.7; color:#333; font-style:italic;">${esc(q.passage)}</div>` : ''}
             ${q.image ? `<img class="question-image" src="${q.image}" alt="Question image" onerror="this.style.display='none'">` : ''}
             <div class="question-text">${esc(q.text || '')}</div>
-            <div class="options-list">
+                       <div class="options-list">
               ${optionOrder.map((origIdx, displayIdx) => {
                 const optText = options[origIdx] || '';
                 const letter = LETTERS[displayIdx] || LETTERS[origIdx];
                 const isSelected = storedAnswer !== undefined && Number(storedAnswer) === origIdx;
-                return `<button class="option-item ${isSelected ? 'selected' : ''}" onclick="window.selectAnswerForMock(${origIdx})">
+                return `<button class="option-item ${isSelected ? 'selected' : ''}" onclick="window.selectAnswerForMock(${origIdx}, '${letter}')">
                   <span class="option-letter">${letter}</span>
                   <span class="option-text">
                     ${q.optionImages && q.optionImages[origIdx] ? `<img class="option-image" src="${q.optionImages[origIdx]}" onerror="this.style.display='none'">` : ''}
@@ -3714,11 +4080,17 @@ function renderMockExamRoom(exam) {
               <button class="btn btn-secondary" onclick="window.prevMockQuestion()">${ICONS.arrowLeft} Previous</button>
               <button class="btn btn-primary" onclick="window.nextMockQuestion()">Next ${ICONS.arrowRight}</button>
               <button class="btn btn-warning" onclick="window.flagMockQuestion()">${ICONS.flag} Flag</button>
+              <button class="mobile-palette-btn" onclick="window.openMobilePalette()">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+                Palette
+              </button>
               <button class="btn btn-success btn-submit" onclick="window.confirmSubmitFor('mock')">${ICONS.check} Submit</button>
             </div>
           </div>
         </div>
-        <aside class="palette">
+        
+        <!-- PALETTE INSIDE THE GRID -->
+        <aside class="palette" id="examPalette">
           <div class="palette-title">
             <span>${isMulti ? subjectName + ' Palette' : 'Question Palette'}</span>
             <span class="badge badge-primary">${isMulti ? Object.keys(exam.answers).filter(k => k.startsWith(`m-${exam.currentSubjectIndex}-`)).length + '/' + total : totalAnswered + '/' + total}</span>
@@ -3743,60 +4115,10 @@ function renderMockExamRoom(exam) {
   return html;
 }
 
-window.selectAnswerForMock = function(originalIndex) {
-  const exam = getExam('mock');
-  const isMulti = exam.subjects && exam.subjects.length > 1;
-  const key = isMulti ? `m-${exam.currentSubjectIndex}-${exam.currentQuestion}` : `m-${exam.currentQuestion}`;
-  exam.answers[key] = originalIndex;
-  document.getElementById('studentContent').innerHTML = renderExamRoom('mock');
-};
-window.gotoMockQuestion = function(n) {
-  const exam = getExam('mock');
-  const isMulti = exam.subjects && exam.subjects.length > 1;
-  const total = isMulti ? ((exam.questionLists[exam.currentSubjectIndex] || []).length) : (exam.questionList || []).length;
-  if (n < 1 || n > total) return;
-  exam.currentQuestion = n;
-  document.getElementById('studentContent').innerHTML = renderExamRoom('mock');
-};
-window.prevMockQuestion = function() {
-  const exam = getExam('mock');
-  const isMulti = exam.subjects && exam.subjects.length > 1;
-  if (exam.currentQuestion > 1) { exam.currentQuestion--; }
-  else if (isMulti && exam.currentSubjectIndex > 0) {
-    exam.currentSubjectIndex--;
-    exam.currentQuestion = (exam.questionLists[exam.currentSubjectIndex] || []).length || 1;
-  }
-  document.getElementById('studentContent').innerHTML = renderExamRoom('mock');
-};
-window.nextMockQuestion = function() {
-  const exam = getExam('mock');
-  const isMulti = exam.subjects && exam.subjects.length > 1;
-  const total = isMulti ? ((exam.questionLists[exam.currentSubjectIndex] || []).length) : (exam.questionList || []).length;
-  if (exam.currentQuestion < total) { exam.currentQuestion++; }
-  else if (isMulti && exam.currentSubjectIndex < exam.subjects.length - 1) {
-    exam.currentSubjectIndex++;
-    exam.currentQuestion = 1;
-  } else { window.confirmSubmitFor('mock'); return; }
-  document.getElementById('studentContent').innerHTML = renderExamRoom('mock');
-};
-window.flagMockQuestion = function() {
-  const exam = getExam('mock');
-  const isMulti = exam.subjects && exam.subjects.length > 1;
-  const k = isMulti ? `m-${exam.currentSubjectIndex}-${exam.currentQuestion}` : `m-${exam.currentQuestion}`;
-  if (exam.flagged.has(k)) exam.flagged.delete(k); else exam.flagged.add(k);
-  document.getElementById('studentContent').innerHTML = renderExamRoom('mock');
-};
-window.switchMockSubject = function(idx) {
-  const exam = getExam('mock');
-  if (!exam.subjects || exam.subjects.length <= 1) return;
-  if (idx < 0 || idx >= exam.subjects.length) return;
-  exam.currentSubjectIndex = idx;
-  exam.currentQuestion = 1;
-  document.getElementById('studentContent').innerHTML = renderExamRoom('mock');
-};
-
 function renderPracticeExamRoom(exam) {
-  const mixedMode = exam.questionOrder === 'mixed';
+  const mixedMode = exam.questionOrder === 'mixed'
+    && Array.isArray(exam.mixedList)
+    && exam.mixedList.length > 0;
   const subj = mixedMode ? null : exam.subjects[exam.currentSubjectIndex];
   const q = getPracticeQuestion(exam);
   if (!q) {
@@ -3866,6 +4188,10 @@ function renderPracticeExamRoom(exam) {
         </div>
       </div>
       ${tabsHTML ? `<div class="subject-tabs">${tabsHTML}</div>` : ''}
+      
+      <!-- OVERLAY MOVED OUTSIDE THE GRID -->
+      <div class="mobile-palette-overlay" id="paletteOverlay" onclick="window.closeMobilePalette()"></div>
+
       <div class="exam-layout">
         <div>
           <div class="question-card">
@@ -3875,11 +4201,11 @@ function renderPracticeExamRoom(exam) {
             ${q.image ? `<img class="question-image" src="${q.image}" alt="Question image" onerror="this.style.display='none'">` : ''}
             <div class="question-text">${esc(q.text || '')}</div>
             <div class="options-list">
-              ${optionOrder.map((origIdx, displayIdx) => {
+                            ${optionOrder.map((origIdx, displayIdx) => {
                 const optText = options[origIdx] || '';
                 const letter = LETTERS[displayIdx] || LETTERS[origIdx];
                 const isSelected = selected !== undefined && Number(selected) === origIdx;
-                return `<button class="option-item ${isSelected ? 'selected' : ''}" onclick="window.selectAnswerForPractice(${origIdx})">
+                return `<button class="option-item ${isSelected ? 'selected' : ''}" onclick="window.selectAnswerForPractice(${origIdx}, '${letter}')">
                   <span class="option-letter">${letter}</span>
                   <span class="option-text">
                     ${q.optionImages && q.optionImages[origIdx] ? `<img class="option-image" src="${q.optionImages[origIdx]}" onerror="this.style.display='none'">` : ''}
@@ -3892,12 +4218,21 @@ function renderPracticeExamRoom(exam) {
               <button class="btn btn-secondary" onclick="window.prevPracticeQuestion()">${ICONS.arrowLeft} Previous</button>
               <button class="btn btn-primary" onclick="window.nextPracticeQuestion()">Next ${ICONS.arrowRight}</button>
               <button class="btn btn-warning" onclick="window.flagPracticeQuestion()">${ICONS.flag} Flag</button>
+              <button class="mobile-palette-btn" onclick="window.openMobilePalette()">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+                Palette
+              </button>
               <button class="btn btn-success btn-submit" onclick="window.confirmSubmitFor('practice')">${ICONS.check} Submit</button>
             </div>
           </div>
         </div>
-        <aside class="palette">
-          <div class="palette-title"><span>${mixedMode ? 'Question Palette' : subj.name + ' Palette'}</span><span class="badge badge-primary">${mixedMode ? Object.keys(exam.answers).length + '/' + total : Object.keys(exam.answers).filter(k => k.startsWith(exam.currentSubjectIndex + '-')).length + '/' + total}</span></div>
+        
+        <!-- PALETTE INSIDE THE GRID -->
+        <aside class="palette" id="examPalette">
+          <div class="palette-title">
+            <span>${mixedMode ? 'Question Palette' : subj.name + ' Palette'}</span>
+            <span class="badge badge-primary">${mixedMode ? Object.keys(exam.answers).length + '/' + total : Object.keys(exam.answers).filter(k => k.startsWith(exam.currentSubjectIndex + '-')).length + '/' + total}</span>
+          </div>
           <div class="palette-grid">${paletteHTML}</div>
           <div class="palette-legend">
             <div class="legend-item"><span class="legend-dot" style="background:var(--primary);"></span> Answered</div>
@@ -3927,21 +4262,15 @@ function getPracticeQuestion(exam) {
   return list[(exam.currentQuestion - 1) % list.length];
 }
 
-window.selectAnswerForPractice = function(originalIndex) {
+window.selectAnswerForPractice = function(originalIndex, shownLetter) {
   const exam = getExam('practice');
   const mixedMode = exam.questionOrder === 'mixed';
   const key = mixedMode ? `q-${exam.currentQuestion}` : `${exam.currentSubjectIndex}-${exam.currentQuestion}`;
   exam.answers[key] = originalIndex;
+  exam.answersShownLetters = exam.answersShownLetters || {};
+  exam.answersShownLetters[key] = shownLetter || LETTERS[originalIndex];
   document.getElementById('studentContent').innerHTML = renderExamRoom('practice');
-};
-window.gotoPracticeQuestion = function(n) {
-  const exam = getExam('practice');
-  const mixedMode = exam.questionOrder === 'mixed';
-  const total = mixedMode ? exam.mixedList.length : (exam.questionLists[exam.currentSubjectIndex] || []).length;
-  if (n < 1 || n > total) return;
-  exam.currentQuestion = n;
-  document.getElementById('studentContent').innerHTML = renderExamRoom('practice');
-};
+}; 
 window.prevPracticeQuestion = function() {
   const exam = getExam('practice');
   const mixedMode = exam.questionOrder === 'mixed';
@@ -3977,6 +4306,68 @@ window.switchPracticeSubject = function(idx) {
   exam.currentSubjectIndex = idx;
   exam.currentQuestion = 1;
   document.getElementById('studentContent').innerHTML = renderExamRoom('practice');
+};window.selectAnswerForMock = function(originalIndex, shownLetter) {
+  const exam = getExam('mock');
+  const isMulti = exam.subjects && exam.subjects.length > 1;
+  const key = isMulti ? `m-${exam.currentSubjectIndex}-${exam.currentQuestion}` : `m-${exam.currentQuestion}`;
+  exam.answers[key] = originalIndex;
+  exam.answersShownLetters = exam.answersShownLetters || {};
+  exam.answersShownLetters[key] = shownLetter || LETTERS[originalIndex];
+  document.getElementById('studentContent').innerHTML = renderExamRoom('mock');
+};
+
+window.gotoMockQuestion = window.gotoMockQuestion || function(n) {
+  window.closeMobilePalette();
+  const exam = getExam('mock');
+  const isMulti = exam.subjects && exam.subjects.length > 1;
+  const total = isMulti ? ((exam.questionLists[exam.currentSubjectIndex] || []).length) : (exam.questionList || []).length;
+  if (n < 1 || n > total) return;
+  exam.currentQuestion = n;
+  document.getElementById('studentContent').innerHTML = renderExamRoom('mock');
+};
+
+window.prevMockQuestion = function() {
+  const exam = getExam('mock');
+  const isMulti = exam.subjects && exam.subjects.length > 1;
+  if (exam.currentQuestion > 1) {
+    exam.currentQuestion--;
+  } else if (isMulti && exam.currentSubjectIndex > 0) {
+    exam.currentSubjectIndex--;
+    exam.currentQuestion = (exam.questionLists[exam.currentSubjectIndex] || []).length || 1;
+  }
+  document.getElementById('studentContent').innerHTML = renderExamRoom('mock');
+};
+
+window.nextMockQuestion = function() {
+  const exam = getExam('mock');
+  const isMulti = exam.subjects && exam.subjects.length > 1;
+  const total = isMulti ? ((exam.questionLists[exam.currentSubjectIndex] || []).length) : (exam.questionList || []).length;
+  if (exam.currentQuestion < total) {
+    exam.currentQuestion++;
+  } else if (isMulti && exam.currentSubjectIndex < exam.subjects.length - 1) {
+    exam.currentSubjectIndex++;
+    exam.currentQuestion = 1;
+  } else {
+    window.confirmSubmitFor('mock');
+    return;
+  }
+  document.getElementById('studentContent').innerHTML = renderExamRoom('mock');
+};
+
+window.flagMockQuestion = function() {
+  const exam = getExam('mock');
+  const isMulti = exam.subjects && exam.subjects.length > 1;
+  const k = isMulti ? `m-${exam.currentSubjectIndex}-${exam.currentQuestion}` : `m-${exam.currentQuestion}`;
+  if (exam.flagged.has(k)) exam.flagged.delete(k); else exam.flagged.add(k);
+  document.getElementById('studentContent').innerHTML = renderExamRoom('mock');
+};
+
+window.switchMockSubject = function(idx) {
+  const exam = getExam('mock');
+  if (!exam.subjects || idx < 0 || idx >= exam.subjects.length) return;
+  exam.currentSubjectIndex = idx;
+  exam.currentQuestion = 1;
+  document.getElementById('studentContent').innerHTML = renderExamRoom('mock');
 };
 
 function startExamTimerFor(type) {
@@ -4101,10 +4492,11 @@ window.quitExam = function(type, backView) {
   window.closeModal();
   const exam = getExam(type);
   if (exam.timerInterval) { clearInterval(exam.timerInterval); exam.timerInterval = null; }
-  exam.currentQuestion = 1;
+    exam.currentQuestion = 1;
   exam.answers = {};
   exam.flagged = new Set();
-exam.initialTime = 0;
+  exam.mixedList = null;
+  // do NOT zero initialTime — startPracticeFromWizard / beginMockExam resets it
   if (type === 'practice') exam.currentSubjectIndex = 0;
   if (type === 'mock') exam.currentSubjectIndex = 0;
     exam._submitted = false;
@@ -4115,9 +4507,10 @@ exam.initialTime = 0;
 
 window.submitExamFor = async function(type, forceFail = false) {
   const exam = getExam(type);
-  if (exam._submitted) return;
-  exam._submitted = true;
-  exam._submitting = false;
+
+  // Guard against double-submission
+  if (exam._submitted || exam._submitting) return;
+  exam._submitting = true;
   const effectiveType = (type === 'practice' && exam.sessionMode === 'mock') ? 'mock' : type;
   window.closeModal();
   window.deactivateExamProctoring();
@@ -4241,21 +4634,29 @@ window.submitExamFor = async function(type, forceFail = false) {
     snapshot,
     answers: answersPlain,
     flagged: Array.from(exam.flagged),
+answersShownLetters: exam.answersShownLetters || {},
     mockId: (effectiveType === 'mock' && exam.mockId) ? exam.mockId : null,
     offences: exam.offences || 0
   };
 
-  try {
-    if (window.__fbPush && window.__fbRef && window.__fbSet) {
-      const cleanResult = sanitizeForFirebase(result);
-      const r = window.__fbPush(window.__fbRef(window.__fbDb, 'results'));
-      await window.__fbSet(r, cleanResult);
-      addNotification('Test Submitted', `${effectiveType === 'practice' ? 'Practice' : 'Mock'} submitted — ${finalScore}/${finalTotal} (${pct}%)`);
-    }
+    try {
+    const cleanResult = sanitizeForFirebase(result);
+    const r = window.__fbPush(window.__fbRef(window.__fbDb, 'results'));
+    await window.__fbSet(r, cleanResult);
+    addNotification('Test Submitted',
+      `${effectiveType === 'practice' ? 'Practice' : 'Mock'} submitted — ${finalScore}/${finalTotal} (${pct}%)`);
+    exam._submitted = true;          // ← only mark submitted AFTER success
   } catch (e) {
     console.error('Result save failed', e);
+    exam._submitting = false;        // ← allow retry
+    window.openModal('Submission Failed',
+      `<p>We could not save your result. Please check your internet connection and try again.</p>
+       <p class="mt-3 text-muted text-sm">Error: ${e.message || 'Network error'}</p>`,
+      [{ label: 'OK', class: 'btn-danger', action: 'window.closeModal()' }]);
+    return;                          // ← do NOT navigate away
   }
 
+  exam._submitting = false;
   exam.currentQuestion = 1;
   exam.answers = {};
   exam.flagged = new Set();
@@ -4373,14 +4774,26 @@ window.deleteResult = function(resultId) {
 
 window.confirmDeleteResult = async function(resultId) {
   window.closeModal();
+
+  // SECURITY: only allow deleting your own result
+  if (!state.currentUser) { alert('You must be logged in.'); return; }
+  const target = (state.userResults || []).find(r => r.id === resultId);
+  if (!target || target.uid !== state.currentUser.uid) {
+    alert('You can only delete your own results.');
+    return;
+  }
+
   try {
-    if (window.__fbRemove && window.__fbRef && window.__fbDb) {
-      await window.__fbRemove(window.__fbRef(window.__fbDb, 'results/' + resultId));
-      addNotification('Result Deleted', 'The result has been removed.');
+    await window.__fbRemove(window.__fbRef(window.__fbDb, 'results/' + resultId));
+    addNotification('Result Deleted', 'The result has been removed.');
+    if (state.studentView === 'review') {
+      window.studentNav('results');
     }
   } catch (e) {
     console.error('Delete failed', e);
-    window.openModal('Delete Failed', `<p>There was an error deleting the result: ${e.message}</p>`, [{ label: 'OK', class: 'btn-danger', action: 'window.closeModal()' }]);
+    window.openModal('Delete Failed',
+      `<p>There was an error deleting the result: ${e.message}</p>`,
+      [{ label: 'OK', class: 'btn-danger', action: 'window.closeModal()' }]);
   }
 };
 
@@ -4440,7 +4853,7 @@ function renderReview() {
   const optionCount = Math.max(4, Math.min(5, options.length || 4));
   const optionIndices = Array.from({ length: optionCount }, (_, i) => i);
 
-  const correctLetter = (q.correct || 'A').toUpperCase();
+  const correctLetter = String(q.correct || 'A').trim().charAt(0).toUpperCase() || 'A';
   const correctIdx = LETTERS.indexOf(correctLetter);
 
   let statusClass = 'skipped';
@@ -4532,7 +4945,12 @@ function renderReview() {
                   ${opt}
                 </span>
                 ${isCorrect ? `<span class="result-review-badge correct" style="margin-left:auto;">Correct answer</span>` : ''}
-                ${(!isCorrect && isChosen) ? `<span class="result-review-badge wrong" style="margin-left:auto;">Your answer</span>` : ''}
+                ${(!isCorrect && isChosen) ? `<span class="result-review-badge wrong" style="margin-left:auto;">Your answer${(() => {
+  const shownMap = rv.result.answersShownLetters || {};
+  const lookupKey = isMulti ? `m-${subjectIndex}-${questionNum}` : `${questionNum}`;
+  const shown = shownMap[lookupKey] || shownMap[`q-${questionNum}`] || shownMap[`m-${questionNum}`];
+  return shown ? ' (' + shown + ')' : '';
+})()}</span>` : ''}
               </div>`;
             }).join('')}
           </div>
@@ -4698,8 +5116,9 @@ function renderResultsDynamic() {
   }
 
   // History table — subject cell now lists each subject + its score
+      // History table — subject cell now lists each subject + its score
     table.innerHTML = `
-    <div style="border:1px solid var(--border);border-radius:var(--radius-md);overflow:hidden;">
+    <div class="mobile-table-wrapper" style="border:1px solid var(--border); border-radius:var(--radius-md);">
       <table style="width:100%;border-collapse:collapse;font-size:var(--text-sm);">
         <thead style="background:var(--bg);">
           <tr>
@@ -5080,6 +5499,17 @@ window.startMockExam = function(mockId) {
   if (!state.currentUser) { window.openLoginPage(); return; }
   const mock = state.allMocks.find(m => m.id === mockId);
   if (!mock) { alert('Mock not found.'); return; }
+
+  // Check if already done
+  const alreadyDone = (state.userResults || []).some(r => r.mockId === mockId);
+  if (alreadyDone) {
+    window.openModal('Already Completed',
+      `<p>You have already submitted this mock exam.</p>
+       <p class="mt-3 text-muted">Check your <strong>Results</strong> page to review your score.</p>`,
+      [{ label: 'OK', class: 'btn-primary', action: 'window.closeModal()' }]);
+    return;
+  }
+
   state.exam.mock.pendingMockId = mockId;
   state.exam.mock.mockInstructions = mock.instructions || '';
   state.exam.mock.mockTitle = mock.title || 'Mock Exam';
@@ -5312,16 +5742,16 @@ function loadQuestions() {
     Object.entries(raw).forEach(([id, q]) => {
       const opts = [];
       const optImgs = [];
-      ['a','b','c','d','e'].forEach((letter, i) => {
-        const val = q['option_' + letter];
-        if (val && String(val).trim()) {
-          opts.push(letter.toUpperCase() + ') ' + String(val).trim());
-          const img = q.option_images
-            ? (q.option_images[letter] || q.option_images[i] || null)
-            : null;
-          optImgs.push(img);
-        }
-      });
+      ['a','b','c','d','e'].forEach((letter) => {
+  const val = q['option_' + letter];
+  if (val && String(val).trim()) {
+    opts.push(letter.toUpperCase() + ') ' + String(val).trim());
+    const img = q.option_images
+      ? (q.option_images[letter] || null)
+      : null;
+    optImgs.push(img);
+  }
+});
       let subjectName = q.subject || 'General';
       let sectionText = q.section || q.instruction || '';
       let questionText = q.question || '';
@@ -5343,7 +5773,7 @@ function loadQuestions() {
         section: sectionText,
         options: opts,
         optionImages: optImgs,
-        correct: (q.answer || 'A').toUpperCase(),
+        correct: String(q.answer || 'A').trim().charAt(0).toUpperCase() || 'A',
         explanation: q.explanation || '',
         image: q.image_url || null,
         explanationImage: q.explanation_image_url || null,
@@ -5378,8 +5808,9 @@ function loadMocks() {
     state.dataLoaded.mocks = true;
     console.log('[Firebase] Mocks loaded:', state.allMocks.length);
     if (state.studentView === 'mock') {
-      document.getElementById('studentContent').innerHTML = renderStudentMock();
-    }
+  const c = document.getElementById('studentContent');
+  if (c) c.innerHTML = renderStudentMock();
+}
   });
 }
 
@@ -5404,10 +5835,18 @@ function loadStudentResults() {
         const c = document.getElementById('studentContent');
         if (c) c.innerHTML = renderStudentMock();
       }
+      if (state.studentView === 'dashboard') {
+        const c = document.getElementById('studentContent');
+        if (c) c.innerHTML = renderStudentDashboard();
+      }
+      if (state.studentView === 'progress') {
+        const c = document.getElementById('studentContent');
+        if (c) c.innerHTML = renderStudentProgress();
+      }
     }, 200);
   });
   window.__resultsUnsub = unsub;
-} 
+}
 
 function bootApp() {
   console.log('[Boot] Starting...');
@@ -5570,6 +6009,16 @@ document.addEventListener('keydown', function(e) {
         console.error("IPC error:", err);
       }
     }
+  }
+});
+
+// Guard against browser Back button during an exam
+window.addEventListener('popstate', function () {
+  if (document.body.classList.contains('exam-mode')) {
+    const type = state.studentView === 'mock-exam' ? 'mock' : 'practice';
+    const back = type === 'mock' ? 'mock' : 'practice';
+    window.confirmQuitExam(type, back);
+    history.pushState(null, '', location.href);
   }
 });
 </script>
