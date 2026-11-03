@@ -3885,6 +3885,7 @@ window.startPracticeFromWizard = function() {
   exam.questionLists = {};
     exam._submitted = false;
   exam._submitting = false;
+exam._timeUpFired = false;   // ← add this line
   exam.offences = 0;
   let totalQ = 0;
 
@@ -4376,9 +4377,12 @@ function startExamTimerFor(type) {
 
   if (!exam.initialTime) exam.initialTime = exam.timer;
 
-  // If time already finished, submit immediately
+  // If time already finished or exactly 0, submit immediately (once)
   if (exam.timer <= 0) {
-    setTimeout(() => { window.autoSubmitFor(type); }, 300);
+    if (!exam._timeUpFired) {
+      exam._timeUpFired = true;
+      setTimeout(() => { window.autoSubmitFor(type); }, 300);
+    }
     return;
   }
 
@@ -4413,8 +4417,7 @@ function startExamTimerFor(type) {
 
 window.autoSubmitFor = function(type) {
   const exam = getExam(type);
-  if (exam._submitting || exam._submitted) return;
-  exam._submitting = true;
+  if (exam._submitted) return;      // only check _submitted, NOT _submitting
   window.openModal('Time Up!',
     `<p>Time is up. Your answers are being submitted automatically.</p>
      <p class="mt-3 text-muted">You answered <strong>${Object.keys(exam.answers).length}</strong> out of <strong>${exam.totalQuestions}</strong>.</p>`,
@@ -4501,6 +4504,7 @@ window.quitExam = function(type, backView) {
   if (type === 'mock') exam.currentSubjectIndex = 0;
     exam._submitted = false;
   exam._submitting = false;
+exam._timeUpFired = false;   // ← add this line
   exam.offences = 0;
   window.studentNav(backView);
 };
